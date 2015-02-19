@@ -17,7 +17,7 @@ public class Model {
 			 
 			IloCplex cp = new IloCplex(); // create the model
 			IloNumVar[][] var = new IloNumVar[evs.size()][ct]; // decision variables' arrays
-
+			IloNumVar[] charges = new IloNumVar[evs.size()];
 			
 			for(int i = 0; i < evs.size(); i++)
 			{
@@ -25,6 +25,7 @@ public class Model {
 				{
 					var[i][j] = cp.boolVar("var(" + i + ", " + j + ")"); // creating boolean decision variables and giving them name
 				}
+				charges[i] = cp.boolVar("c(" + i + ")");
 			}
 			
 			for(int ev = 0; ev < evs.size(); ev++)
@@ -59,26 +60,34 @@ public class Model {
 				cp.addLe(p, chargers);
 			}
 			
-			IloLinearNumExpr p = cp.linearNumExpr();
+
 			
 			
 			for(int t = 0; t < ct; t++) // energy constraint, the evs must not consume more than the available energy in the slot
 			{						
 				IloLinearNumExpr en = cp.linearNumExpr(); // the expression that need to be maximized, in this case, maximize
-				for(int e = 0; e < evs.size(); e++)			 // the total number of evs charging in all time slots
+															// the total number of evs charging in all time slots
+				
+				for(int e = 0; e < evs.size(); e++)			 
 				{
-					int start = evs.get(e).getStartTime();
-					int end = evs.get(e).getEndTime() + 1;
-					for(int time = start; time < end; time++)
-					{
-						p.addTerm(1, var[e][time]);
-					}
-
 					en.addTerm(2, var[e][t]); // evs consume 2 energy units (not real number)
 				}
+
 				cp.addLe(en, energy[t]); // energy used in a time slot must not exceed the available energy
 			}
-			//System.out.println(cp);
+
+			
+			IloLinearNumExpr p = cp.linearNumExpr();
+			for(int ev = 0; ev < evs.size(); ev ++)
+			{
+				int start = evs.get(ev).getStartTime();
+				int end = evs.get(ev).getEndTime() + 1;
+				for(int time = start; time < end; time++)
+				{
+					p.addTerm(1, var[ev][time]);
+				}
+			}
+
 			cp.addMaximize(p);
 			
 				
