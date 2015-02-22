@@ -1,5 +1,10 @@
 package source;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -71,6 +76,36 @@ public class DataGenerator {
 			//System.out.println(energy[i]);
 		}
 	}
+	
+	
+	
+	// increases parking time for vehicle 'car' by 'inc'
+	public void increaseParkingTime(int inc, int car)
+	{
+		int old_start = cars.get(car).getStartTime();
+		int old_end = cars.get(car).getEndTime();
+		int new_start = old_start;
+		int new_end = old_end;
+		
+		
+		if((old_end + inc) > (time_slots - 1))
+		{
+			int res = 0;
+			new_end = time_slots - 1;
+			res = old_end + inc - time_slots + 1;
+			if((old_start - res) >= 0)
+			{
+				new_start = old_start - res;
+			}
+		}
+		else
+		{
+			new_end = old_end + inc;
+		}
+		
+		cars.get(car).setStartTime(new_start);
+		cars.get(car).setEndTime(new_end);
+	}
 
 	public ArrayList<Car> getCars() {
 		return cars;
@@ -81,8 +116,74 @@ public class DataGenerator {
 	}
 	
 	
-	
-	
+	// reads data from file
+	/* file structure
+	 * first line - #evs
+	 * second line - #time_slots
+	 * third line - #chargers
+	 * then the triplets mean - (start time, end time, energy the ev needs)
+	 * and the last lines of integers is the energy in each time slot
+	 */
+	public void readFromFile()
+	{
+		FileInputStream fstream = null;
+		try {
+			fstream = new FileInputStream("Data.txt");
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		BufferedReader br = new BufferedReader(new InputStreamReader(fstream));
+		
+		String line;
+		
+		try {
+			line = br.readLine();
+			evs = Integer.parseInt(line);
+			line = br.readLine();
+			time_slots =  Integer.parseInt(line);
+			line = br.readLine();
+			chargers = Integer.parseInt(line);
+			
+			energy = new int[time_slots];
+			
+			//System.out.println(time_slots + " " + evs + " " + chargers);
+			
+			for(int i = 0; i < evs; i++)
+			{
+				line = br.readLine();
+				String[] temp = line.split(" ");
+				int[] car_properties = new int[temp.length];
+				for(int j = 0; j < temp.length; j ++)
+				{
+					car_properties[j] = Integer.parseInt(temp[j]);	
+				}
+				//System.out.println("");
+				Car car = new Car();
+				car.setStartTime(car_properties[0]);
+				car.setEndTime(car_properties[1]);
+				car.setNeeds(car_properties[2]);
+				//System.out.println("Ev: " + i + " Starts at: " + car.getStartTime() + 
+						//" ends at: " + car.getEndTime() + " needs: " + car.getNeeds());
+				cars.add(car);
+			}
+			
+			for(int i = 0; i < time_slots; i++)
+			{
+				line = br.readLine();
+				energy[i] = Integer.parseInt(line);
+				//System.out.println(energy[i]);
+			}
+			fstream.close();
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+
+		
+	}
 
 	
 	

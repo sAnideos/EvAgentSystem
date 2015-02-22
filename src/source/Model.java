@@ -40,13 +40,13 @@ public class Model {
 						p.addTerm(1, var[ev][t]);
 				}
 				//System.out.println(p);
-				cp.addEq(slots_need, p);
-				
+				cp.addEq(cp.prod(charges[ev], slots_need), p);
+
 				//cp.addLe(p, 3);
 				// for the github
 
 			}
-			
+			//System.out.println(cp);
 			
 			for(int t = 0; t < ct; t++) // the sum of evs that charge in a time slot must not exceed the num of slots
 			{
@@ -104,6 +104,10 @@ public class Model {
 				
 				for(int ev = 0; ev < evs.size(); ev++)
 				{
+					if(cp.getValue(charges[ev]) == 1.0)
+					{
+						
+					}
 					int start = evs.get(ev).getStartTime();
 					int end = evs.get(ev).getEndTime();
 					int needs = evs.get(ev).getNeeds();
@@ -122,6 +126,33 @@ public class Model {
 					
 					System.out.println(needs + "    Was available from: " + start + " to: " + end);
 				}
+				
+				
+				for(int ev = 0; ev < evs.size(); ev++)
+				{
+					if(cp.getValue(charges[ev]) == 1.0)
+					{
+						System.out.println("Vehicle: " + (ev + 1) + " can be charged!");
+					}
+					else
+					{
+						System.out.println("Vehicle: " + (ev + 1) + " cannot be charged...");
+					}
+				}
+				for(int i = 0; i < ct; i++)
+				{
+					int energy_used = 0;
+					for(int ev = 0; ev < evs.size(); ev++)
+					{
+						if(cp.getValue(var[ev][i]) == 1.0)
+						{
+							energy_used += 2; // every ev that charges consumes 2 energy units
+						}
+					}
+					System.out.println("Energy used for time slot " + i + " is " + energy_used + " and the remaining"
+							+ " energy is " + (energy[i] - energy_used) + ".");
+				}
+				
 			}
 
 			
