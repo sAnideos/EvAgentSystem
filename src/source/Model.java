@@ -76,7 +76,8 @@ public class Model {
 				cp.addLe(en, energy[t]); // energy used in a time slot must not exceed the available energy
 			}
 
-			
+			/*
+			// antikeimeniki synartisi, megistpopoiisi asswn
 			IloLinearNumExpr p = cp.linearNumExpr();
 			for(int ev = 0; ev < evs.size(); ev ++)
 			{
@@ -89,7 +90,16 @@ public class Model {
 			}
 
 			cp.addMaximize(p);
+			*/
 			
+			// megistopoiisi oximnatwn pou fortizoun
+			IloLinearNumExpr p = cp.linearNumExpr();
+			for(int ev = 0; ev < evs.size(); ev++)
+			{
+				p.addTerm(1, charges[ev]);
+			}
+			cp.addMaximize(p);
+
 				
 			
 			if(cp.solve()) // solve the maximization problem and print the results

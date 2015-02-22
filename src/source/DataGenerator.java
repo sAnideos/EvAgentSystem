@@ -175,9 +175,9 @@ public class DataGenerator {
 				//System.out.println(energy[i]);
 			}
 			fstream.close();
+			br.close();
 			
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
