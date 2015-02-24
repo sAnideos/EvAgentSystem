@@ -16,6 +16,9 @@ public class DataGenerator {
 	private int chargers;
 	private ArrayList<Car> cars;
 	private int[] energy;
+	private int[][] d_energy;
+	
+	
 	public int getTime_slots() {
 		return time_slots;
 	}
@@ -77,8 +80,25 @@ public class DataGenerator {
 		}
 	}
 	
+	public void generateDiverseEnergy()
+	{
+		d_energy = new int[time_slots][2];
+		
+		
+		for(int i = 0; i < time_slots; i++)
+		{
+			int random = rand.nextInt(2) + 1;
+			d_energy[i][0] = random;
+			random = rand.nextInt(2) + 1;
+			d_energy[i][1] = random;
+		}
+		
+	}
 	
-	
+	public int[][] getD_energy() {
+		return d_energy;
+	}
+
 	// increases parking time for vehicle 'car' by 'inc'
 	public void increaseParkingTime(int inc, int car)
 	{
@@ -167,12 +187,21 @@ public class DataGenerator {
 						//" ends at: " + car.getEndTime() + " needs: " + car.getNeeds());
 				cars.add(car);
 			}
-			
+			d_energy = new int[time_slots][2];
 			for(int i = 0; i < time_slots; i++)
 			{
+
 				line = br.readLine();
-				energy[i] = Integer.parseInt(line);
-				//System.out.println(energy[i]);
+				System.out.println(line);
+				String[] temp = line.split(" ");
+				int[] energy_amount = new int[temp.length];
+				for(int j = 0; j < temp.length; j ++)
+				{
+					energy_amount[j] = Integer.parseInt(temp[j]);
+				}
+				d_energy[i][0] = energy_amount[0];
+				d_energy[i][1] = energy_amount[1];	
+				System.out.println(d_energy[i][0]);
 			}
 			fstream.close();
 			br.close();
