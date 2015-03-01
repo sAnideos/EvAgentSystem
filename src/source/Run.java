@@ -4,12 +4,11 @@ public class Run {
 
 	private DataGenerator dt;
 	
-	//300, 150, 100, 75 me auta ta noumera -  auto me tin energeia sa metavliti apofashs - 0.11 secs to allo me energeia xwris diaxwrismo (palioteri ekdosi 3.49)
+	
 	public Run()
 	{
-		dt = new DataGenerator(500, 200, 150, 100);
+		dt = new DataGenerator(10, 10, 5);
 		//dt.generateCarData();
-		//dt.generateDiverseEnergy();
 		//dt.generateEnergyData();
 		dt.readFromFile();
 	}
@@ -18,9 +17,8 @@ public class Run {
 	{
 		Model model = new Model();
 		model.createAndRunModel(dt.getCars(), dt.getTime_slots(),
-				dt.getEnergy(), dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy());
+				dt.getEnergy(), dt.getChargers(), dt.getD_energy());
 		
-		/*
 		// increases every vehicle parking time by 2
 		System.out.println();
 		System.out.println("Increasing parking time by 2 for every vehicle...");
@@ -33,7 +31,6 @@ public class Run {
 		model = new Model();
 		model.createAndRunModel(dt.getCars(), dt.getTime_slots(),
 				dt.getEnergy(), dt.getChargers(), dt.getD_energy());
-				*/
 		
 	}
 	

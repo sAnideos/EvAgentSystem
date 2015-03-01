@@ -16,9 +16,7 @@ public class DataGenerator {
 	private int chargers;
 	private ArrayList<Car> cars;
 	private int[] energy;
-	private int[] renewable_energy;
-	private int[] non_renewable_energy;
-	private int energy_range;
+	private int[][] d_energy;
 	
 	
 	public int getTime_slots() {
@@ -32,12 +30,11 @@ public class DataGenerator {
 	private Random rand;
 	
 	
-	public DataGenerator(int evs, int time_slots, int chargers, int energy_range)
+	public DataGenerator(int evs, int time_slots, int chargers)
 	{
 		this.evs = evs;
 		this.time_slots = time_slots;
 		this.chargers = chargers;
-		this.energy_range = energy_range;
 		cars = new ArrayList<Car>();
 		rand = new Random();
 	}
@@ -78,34 +75,28 @@ public class DataGenerator {
 		energy = new int[time_slots];
 		for(int i = 0; i < time_slots; i++)
 		{
-			energy[i] = rand.nextInt(energy_range) + 1;	
+			energy[i] = rand.nextInt(20) + 1;	
 			//System.out.println(energy[i]);
 		}
 	}
 	
 	public void generateDiverseEnergy()
 	{
-		renewable_energy = new int[time_slots];
-		non_renewable_energy = new int[time_slots];
+		d_energy = new int[time_slots][2];
+		
 		
 		for(int i = 0; i < time_slots; i++)
 		{
-			int random = rand.nextInt(energy_range) + 1;
-			renewable_energy[i] = random;
-			random = rand.nextInt(energy_range) + 1;
-			non_renewable_energy[i] = random;
+			int random = rand.nextInt(2) + 1;
+			d_energy[i][0] = random;
+			random = rand.nextInt(2) + 1;
+			d_energy[i][1] = random;
 		}
 		
 	}
 	
-
-
-	public int[] getRenewable_energy() {
-		return renewable_energy;
-	}
-
-	public int[] getNon_renewable_energy() {
-		return non_renewable_energy;
+	public int[][] getD_energy() {
+		return d_energy;
 	}
 
 	// increases parking time for vehicle 'car' by 'inc'
@@ -196,22 +187,21 @@ public class DataGenerator {
 						//" ends at: " + car.getEndTime() + " needs: " + car.getNeeds());
 				cars.add(car);
 			}
-			renewable_energy = new int[time_slots];
-			non_renewable_energy = new int[time_slots];
+			d_energy = new int[time_slots][2];
 			for(int i = 0; i < time_slots; i++)
 			{
 
 				line = br.readLine();
+				System.out.println(line);
 				String[] temp = line.split(" ");
 				int[] energy_amount = new int[temp.length];
 				for(int j = 0; j < temp.length; j ++)
 				{
 					energy_amount[j] = Integer.parseInt(temp[j]);
 				}
-				renewable_energy[i] = energy_amount[0];
-				non_renewable_energy[i] = energy_amount[1];	
-				//System.out.print(renewable_energy[i] + ", ");
-				//System.out.println(non_renewable_energy[i]);
+				d_energy[i][0] = energy_amount[0];
+				d_energy[i][1] = energy_amount[1];	
+				System.out.println(d_energy[i][0]);
 			}
 			fstream.close();
 			br.close();

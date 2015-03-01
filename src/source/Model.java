@@ -10,7 +10,7 @@ import ilog.cplex.IloCplex;
 public class Model {
 
 	
-	public void createAndRunModel(ArrayList<Car> evs, int ct, int[] energy, int chargers, int[] renewable_energy, int[] non_renewable_energy)
+	public void createAndRunModel(ArrayList<Car> evs, int ct, int[] energy, int chargers, int[][] d_energy)
 	{
 		
 		try {
@@ -18,8 +18,8 @@ public class Model {
 			IloCplex cp = new IloCplex(); // create the model
 			IloNumVar[][] var = new IloNumVar[evs.size()][ct]; // decision variables' arrays
 			IloNumVar[] charges = new IloNumVar[evs.size()];
-			IloNumVar[][] ren_energy = new IloNumVar[ct][];
-			IloNumVar[][] non_ren_energy = new IloNumVar[ct][];
+			IloNumVar[][][] diverse_energy = new IloNumVar[ct][2][];
+					
 			
 			
 			for(int i = 0; i < evs.size(); i++)
@@ -52,18 +52,18 @@ public class Model {
 			//System.out.println(cp);
 			for(int t = 0; t < ct; t++)
 			{
-				ren_energy[t] = new IloNumVar[renewable_energy[t]];
+				diverse_energy[t][0] = new IloNumVar[d_energy[t][0]];
 
-				for(int i = 0; i < renewable_energy[t]; i++)
+				for(int i = 0; i < d_energy[t][0]; i++)
 				{
-					ren_energy[t][i] = cp.boolVar("ren(" + t + ", " + i + ")");
+					diverse_energy[t][0][i] = cp.boolVar("ren(" + t + ", " + i + ")");
 				}
 				
-				non_ren_energy[t] = new IloNumVar[non_renewable_energy[t]];
+				diverse_energy[t][1] = new IloNumVar[d_energy[t][1]];
 				
-				for(int i = 0; i < non_renewable_energy[t]; i++)
+				for(int i = 0; i < d_energy[t][1]; i++)
 				{
-					non_ren_energy[t][i] = cp.boolVar("non(" + t + ", " + i + ")");
+					diverse_energy[t][1][i] = cp.boolVar("non(" + t + ", " + i + ")");
 				}
 			}
 			
@@ -81,16 +81,16 @@ public class Model {
 						cars.addTerm(1, var[ev][t]);
 					}
 				}
-				for(int en = 0; en < renewable_energy[t]; en++)
+				for(int en = 0; en < d_energy[t][0]; en++)
 				{
-					energy_.addTerm(1, ren_energy[t][en]);
+					energy_.addTerm(1, diverse_energy[t][0][en]);
 				}
-				for(int en = 0; en < non_renewable_energy[t]; en++)
+				for(int en = 0; en < d_energy[t][1]; en++)
 				{
-					energy_.addTerm(1, non_ren_energy[t][en]);
+					energy_.addTerm(1, diverse_energy[t][1][en]);
 				}
 				
-				cp.addEq(energy_, cars);
+				cp.addLe(energy_, cars);
 			}
 
 			
@@ -127,7 +127,7 @@ public class Model {
 
 				}
 
-				cp.addLe(en, renewable_energy[t] + non_renewable_energy[t]); // energy used in a time slot must not exceed the available energy
+				cp.addLe(en, d_energy[t][0] + d_energy[t][1]); // energy used in a time slot must not exceed the available energy
 			}
 			
 			
@@ -151,13 +151,13 @@ public class Model {
 			IloLinearNumExpr p_energy = cp.linearNumExpr();
 			for(int t = 0; t < ct; t++)
 			{
-				for(int en = 0; en < renewable_energy[t]; en++)
+				for(int en = 0; en < d_energy[t][0]; en++)
 				{
-					p_energy.addTerm(10, ren_energy[t][en]);
+					p_energy.addTerm(10, diverse_energy[t][0][en]);
 				}
-				for(int en = 0; en < non_renewable_energy[t]; en++)
+				for(int en = 0; en < d_energy[t][1]; en++)
 				{
-					p_energy.addTerm(1, non_ren_energy[t][en]);
+					p_energy.addTerm(1, diverse_energy[t][1][en]);
 				}
 				
 			}
@@ -179,7 +179,7 @@ public class Model {
 			{
 				for(int t = 0; t < ct; t++)
 				{
-					int all_energy = renewable_energy[t] + non_renewable_energy[t];
+					int all_energy = d_energy[t][0] + d_energy[t][1];
 					System.out.print(all_energy + " ");
 									
 				}
@@ -230,20 +230,20 @@ public class Model {
 						}
 					}
 					System.out.println("Energy used for time slot " + i + " is " + energy_used + " and the remaining"
-							+ " energy is " + (renewable_energy[i] + non_renewable_energy[i] - energy_used) + ".");
+							+ " energy is " + (d_energy[i][0] + d_energy[i][1] - energy_used) + ".");
 				}
 				for(int i = 0; i < ct; i++)
 				{
-					System.out.print("Renewable (available: " + renewable_energy[i] + "): ");
-					for(int en = 0; en < renewable_energy[i]; en++)
+					System.out.print("Renewable (available: " + d_energy[i][0] + "): ");
+					for(int en = 0; en < d_energy[i][0]; en++)
 					{
-						System.out.print(cp.getValue(ren_energy[i][en]) + " ");
+						System.out.print(cp.getValue(diverse_energy[i][0][en]) + " ");
 					}
 					System.out.println();
-					System.out.print("Non Renewable (available: " + non_renewable_energy[i] + "): ");
-					for(int en = 0; en < non_renewable_energy[i]; en++)
+					System.out.print("Non Renewable (available: " + d_energy[i][1] + "): ");
+					for(int en = 0; en < d_energy[i][1]; en++)
 					{
-						System.out.print(cp.getValue(non_ren_energy[i][en]) + " ");
+						System.out.print(cp.getValue(diverse_energy[i][1][en]) + " ");
 					}
 					System.out.println();
 				}
