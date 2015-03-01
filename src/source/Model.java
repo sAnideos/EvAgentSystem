@@ -10,7 +10,7 @@ import ilog.cplex.IloCplex;
 public class Model {
 
 	
-	public void createAndRunModel(ArrayList<Car> evs, int ct, int[] energy, int chargers, int[][] d_energy)
+	public void createAndRunModel(ArrayList<Car> evs, int ct, int[] energy, int chargers)
 	{
 		
 		try {
@@ -18,9 +18,6 @@ public class Model {
 			IloCplex cp = new IloCplex(); // create the model
 			IloNumVar[][] var = new IloNumVar[evs.size()][ct]; // decision variables' arrays
 			IloNumVar[] charges = new IloNumVar[evs.size()];
-			IloNumVar[][][] diverse_energy = new IloNumVar[ct][2][];
-					
-			
 			
 			for(int i = 0; i < evs.size(); i++)
 			{
@@ -50,50 +47,6 @@ public class Model {
 
 			}
 			//System.out.println(cp);
-			for(int t = 0; t < ct; t++)
-			{
-				diverse_energy[t][0] = new IloNumVar[d_energy[t][0]];
-
-				for(int i = 0; i < d_energy[t][0]; i++)
-				{
-					diverse_energy[t][0][i] = cp.boolVar("ren(" + t + ", " + i + ")");
-				}
-				
-				diverse_energy[t][1] = new IloNumVar[d_energy[t][1]];
-				
-				for(int i = 0; i < d_energy[t][1]; i++)
-				{
-					diverse_energy[t][1][i] = cp.boolVar("non(" + t + ", " + i + ")");
-				}
-			}
-			
-
-			for(int t = 0; t < ct; t++)
-			{
-				IloLinearNumExpr cars = cp.linearNumExpr();
-				IloLinearNumExpr energy_ = cp.linearNumExpr();
-				for(int ev = 0; ev < evs.size(); ev++)
-				{
-					int start = evs.get(ev).getStartTime();
-					int end = evs.get(ev).getEndTime() + 1;
-					if(t >= start && t <= end)
-					{
-						cars.addTerm(1, var[ev][t]);
-					}
-				}
-				for(int en = 0; en < d_energy[t][0]; en++)
-				{
-					energy_.addTerm(1, diverse_energy[t][0][en]);
-				}
-				for(int en = 0; en < d_energy[t][1]; en++)
-				{
-					energy_.addTerm(1, diverse_energy[t][1][en]);
-				}
-				
-				cp.addLe(energy_, cars);
-			}
-
-			
 			
 			for(int t = 0; t < ct; t++) // the sum of evs that charge in a time slot must not exceed the num of slots
 			{
@@ -101,12 +54,7 @@ public class Model {
 				
 				for(int e = 0; e < evs.size(); e++)
 				{
-					int start = evs.get(e).getStartTime();
-					int end = evs.get(e).getEndTime() + 1;
-					if(t >= start && t <= end)
-					{
-						p.addTerm(1, var[e][t]);
-					}
+					p.addTerm(1, var[e][t]);
 				}
 				
 				cp.addLe(p, chargers);
@@ -122,72 +70,54 @@ public class Model {
 				
 				for(int e = 0; e < evs.size(); e++)			 
 				{
-
-						en.addTerm(1, var[e][t]); // evs consume 2 energy units (not real number)
-
+					en.addTerm(2, var[e][t]); // evs consume 2 energy units (not real number)
 				}
 
-				cp.addLe(en, d_energy[t][0] + d_energy[t][1]); // energy used in a time slot must not exceed the available energy
+				cp.addLe(en, energy[t]); // energy used in a time slot must not exceed the available energy
 			}
-			
-			
 
-			
+			/*
 			// antikeimeniki synartisi, megistpopoiisi asswn
-			IloLinearNumExpr p_charges = cp.linearNumExpr();
+			IloLinearNumExpr p = cp.linearNumExpr();
 			for(int ev = 0; ev < evs.size(); ev ++)
 			{
 				int start = evs.get(ev).getStartTime();
 				int end = evs.get(ev).getEndTime() + 1;
 				for(int time = start; time < end; time++)
 				{
-					p_charges.addTerm(1, var[ev][time]);
+					p.addTerm(1, var[ev][time]);
 				}
 			}
 
-			
-			
-			// na xrisimopoiei perissotero ananewsimes
-			IloLinearNumExpr p_energy = cp.linearNumExpr();
-			for(int t = 0; t < ct; t++)
-			{
-				for(int en = 0; en < d_energy[t][0]; en++)
-				{
-					p_energy.addTerm(10, diverse_energy[t][0][en]);
-				}
-				for(int en = 0; en < d_energy[t][1]; en++)
-				{
-					p_energy.addTerm(1, diverse_energy[t][1][en]);
-				}
-				
-			}
-			
-			
+			cp.addMaximize(p);
+			*/
 			
 			// megistopoiisi oximnatwn pou fortizoun
-			/*
-			IloLinearNumExpr p_charges = cp.linearNumExpr();
+			IloLinearNumExpr p = cp.linearNumExpr();
 			for(int ev = 0; ev < evs.size(); ev++)
 			{
-				p_charges.addTerm(1, charges[ev]);
+				p.addTerm(1, charges[ev]);
 			}
-			*/
-			cp.addMaximize(cp.sum(p_charges, p_energy));
+			cp.addMaximize(p);
+
 				
 			
 			if(cp.solve()) // solve the maximization problem and print the results
 			{
+				System.out.println();
 				for(int t = 0; t < ct; t++)
 				{
-					int all_energy = d_energy[t][0] + d_energy[t][1];
-					System.out.print(all_energy + " ");
+					System.out.print(energy[t] + " ");
 									
 				}
 				System.out.println();
 				
 				for(int ev = 0; ev < evs.size(); ev++)
 				{
-					
+					if(cp.getValue(charges[ev]) == 1.0)
+					{
+						
+					}
 					int start = evs.get(ev).getStartTime();
 					int end = evs.get(ev).getEndTime();
 					int needs = evs.get(ev).getNeeds();
@@ -226,26 +156,11 @@ public class Model {
 					{
 						if(cp.getValue(var[ev][i]) == 1.0)
 						{
-							energy_used += 1; // every ev that charges consumes 2 energy units
+							energy_used += 2; // every ev that charges consumes 2 energy units
 						}
 					}
 					System.out.println("Energy used for time slot " + i + " is " + energy_used + " and the remaining"
-							+ " energy is " + (d_energy[i][0] + d_energy[i][1] - energy_used) + ".");
-				}
-				for(int i = 0; i < ct; i++)
-				{
-					System.out.print("Renewable (available: " + d_energy[i][0] + "): ");
-					for(int en = 0; en < d_energy[i][0]; en++)
-					{
-						System.out.print(cp.getValue(diverse_energy[i][0][en]) + " ");
-					}
-					System.out.println();
-					System.out.print("Non Renewable (available: " + d_energy[i][1] + "): ");
-					for(int en = 0; en < d_energy[i][1]; en++)
-					{
-						System.out.print(cp.getValue(diverse_energy[i][1][en]) + " ");
-					}
-					System.out.println();
+							+ " energy is " + (energy[i] - energy_used) + ".");
 				}
 				
 			}
