@@ -1,5 +1,6 @@
 package source;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 import ilog.concert.IloException;
@@ -31,14 +32,14 @@ public class Model {
 				charges[i] = cp.boolVar("c(" + i + ")");
 			}
 			
+			// 1)
 			for(int ev = 0; ev < evs.size(); ev++)
 			{
-				int start = evs.get(ev).getStartTime();
-				int end = evs.get(ev).getEndTime() + 1; // +1 gt ama einai idios o start me end (1 wra available dld), de tha treksei i for
+
 				int slots_need = evs.get(ev).getNeeds();
 				IloLinearNumExpr p = cp.linearNumExpr(); // linear expression for the constraint
 				
-				for(int t = start; t < end; t++) // the time that the ev is available for charging
+				for(int t = 0; t < ct; t++) // the time that the ev is available for charging
 				{
 						p.addTerm(1, var[ev][t]);
 				}
@@ -50,6 +51,8 @@ public class Model {
 
 			}
 			//System.out.println(cp);
+			
+			
 			for(int t = 0; t < ct; t++)
 			{
 				ren_energy[t] = new IloNumVar[renewable_energy[t]];
@@ -67,7 +70,7 @@ public class Model {
 				}
 			}
 			
-
+			// 2) 
 			for(int t = 0; t < ct; t++)
 			{
 				IloLinearNumExpr cars = cp.linearNumExpr();
@@ -94,19 +97,19 @@ public class Model {
 			}
 
 			
-			
+			// 3)
 			for(int t = 0; t < ct; t++) // the sum of evs that charge in a time slot must not exceed the num of slots
 			{
 				IloLinearNumExpr p = cp.linearNumExpr();
 				
 				for(int e = 0; e < evs.size(); e++)
 				{
-					int start = evs.get(e).getStartTime();
-					int end = evs.get(e).getEndTime() + 1;
-					if(t >= start && t <= end)
-					{
+					//int start = evs.get(e).getStartTime();
+					//int end = evs.get(e).getEndTime() + 1;
+					//if(t >= start && t <= end)
+					//{
 						p.addTerm(1, var[e][t]);
-					}
+					//}
 				}
 				
 				cp.addLe(p, chargers);
@@ -114,7 +117,7 @@ public class Model {
 			
 
 			
-			
+			// 4)
 			for(int t = 0; t < ct; t++) // energy constraint, the evs must not consume more than the available energy in the slot
 			{						
 				IloLinearNumExpr en = cp.linearNumExpr(); // the expression that need to be maximized, in this case, maximize
@@ -132,7 +135,9 @@ public class Model {
 			
 			
 
+			// ATIKEIMENIKES SYNARTISEIS
 			
+			// 1)
 			// antikeimeniki synartisi, megistpopoiisi asswn
 			IloLinearNumExpr p_charges = cp.linearNumExpr();
 			for(int ev = 0; ev < evs.size(); ev ++)
@@ -232,22 +237,47 @@ public class Model {
 					System.out.println("Energy used for time slot " + i + " is " + energy_used + " and the remaining"
 							+ " energy is " + (renewable_energy[i] + non_renewable_energy[i] - energy_used) + ".");
 				}
+				float used_r = 0; //renewable
+				float used_n = 0; //non renewable
+				float all_ren = 0;
+				float all_non = 0;
 				for(int i = 0; i < ct; i++)
 				{
 					System.out.print("Renewable (available: " + renewable_energy[i] + "): ");
+					float used = 0;
 					for(int en = 0; en < renewable_energy[i]; en++)
-					{
-						System.out.print(cp.getValue(ren_energy[i][en]) + " ");
+					{		
+						all_ren ++;
+						if(cp.getValue(ren_energy[i][en]) == 1.0)
+						{
+							used++;
+							used_r++;
+						}
 					}
+					System.out.print("used " + ((used / renewable_energy[i])*100) + "% ");
 					System.out.println();
 					System.out.print("Non Renewable (available: " + non_renewable_energy[i] + "): ");
+					used = 0;
 					for(int en = 0; en < non_renewable_energy[i]; en++)
 					{
-						System.out.print(cp.getValue(non_ren_energy[i][en]) + " ");
+						all_non ++;
+						if(cp.getValue(non_ren_energy[i][en]) == 1.0)
+						{
+							used++;
+							used_n++;
+						}
 					}
+					System.out.print("used " + ((used / renewable_energy[i])*100) + "% ");
 					System.out.println();
 				}
+
+				System.out.println("Used " + ((used_r / all_ren)*100) + "% of renewable energy (" + (int)used_r + "/" + (int)all_ren + ")");
+				System.out.println("Used " + ((used_n / all_non)*100) + "% of non renewable energy (" + (int)used_n + "/" + (int)all_non + ")");
 				
+				
+	        	DecimalFormat df = new DecimalFormat("#.00"); 	        	
+	        	System.out.print(df.format(((used_r / (used_r + used_n))*100)) + "% of energy used was reanewable!");
+
 			}
 
 			
