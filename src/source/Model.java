@@ -184,11 +184,9 @@ public class Model {
 			{
 				for(int t = 0; t < ct; t++)
 				{
-					int all_energy = renewable_energy[t] + non_renewable_energy[t];
-					System.out.print(all_energy + " ");
-									
+					int all_energy = renewable_energy[t] + non_renewable_energy[t];					
 				}
-				System.out.println();
+
 				
 				for(int ev = 0; ev < evs.size(); ev++)
 				{
@@ -200,16 +198,16 @@ public class Model {
 					{
 						if(cp.getValue(var[ev][t]) == 1.0)
 						{
-							System.out.print("O" + "  ");
+							//System.out.print("O" + "  ");
 						}
 						else
 						{
-							System.out.print("X" + "  ");
+							//System.out.print("X" + "  ");
 						}
 							
 					}
 					
-					System.out.println(needs + "    Was available from: " + start + " to: " + end);
+					//System.out.println(needs + "    Was available from: " + start + " to: " + end);
 				}
 				
 				
@@ -217,11 +215,11 @@ public class Model {
 				{
 					if(cp.getValue(charges[ev]) == 1.0)
 					{
-						System.out.println("Vehicle: " + (ev + 1) + " can be charged!");
+						//System.out.println("Vehicle: " + (ev + 1) + " can be charged!");
 					}
 					else
 					{
-						System.out.println("Vehicle: " + (ev + 1) + " cannot be charged...");
+						//System.out.println("Vehicle: " + (ev + 1) + " cannot be charged...");
 					}
 				}
 				for(int i = 0; i < ct; i++)
@@ -234,8 +232,8 @@ public class Model {
 							energy_used += 1; // every ev that charges consumes 2 energy units
 						}
 					}
-					System.out.println("Energy used for time slot " + i + " is " + energy_used + " and the remaining"
-							+ " energy is " + (renewable_energy[i] + non_renewable_energy[i] - energy_used) + ".");
+					//System.out.println("Energy used for time slot " + i + " is " + energy_used + " and the remaining"
+							//+ " energy is " + (renewable_energy[i] + non_renewable_energy[i] - energy_used) + ".");
 				}
 				float used_r = 0; //renewable
 				float used_n = 0; //non renewable
@@ -243,7 +241,7 @@ public class Model {
 				float all_non = 0;
 				for(int i = 0; i < ct; i++)
 				{
-					System.out.print("Renewable (available: " + renewable_energy[i] + "): ");
+					//System.out.print("Renewable (available: " + renewable_energy[i] + "): ");
 					float used = 0;
 					for(int en = 0; en < renewable_energy[i]; en++)
 					{		
@@ -254,9 +252,9 @@ public class Model {
 							used_r++;
 						}
 					}
-					System.out.print("used " + ((used / renewable_energy[i])*100) + "% ");
-					System.out.println();
-					System.out.print("Non Renewable (available: " + non_renewable_energy[i] + "): ");
+					//System.out.print("used " + ((used / renewable_energy[i])*100) + "% ");
+					//System.out.println();
+					//System.out.print("Non Renewable (available: " + non_renewable_energy[i] + "): ");
 					used = 0;
 					for(int en = 0; en < non_renewable_energy[i]; en++)
 					{
@@ -267,8 +265,8 @@ public class Model {
 							used_n++;
 						}
 					}
-					System.out.print("used " + ((used / renewable_energy[i])*100) + "% ");
-					System.out.println();
+					//System.out.print("used " + ((used / non_renewable_energy[i])*100) + "% ");
+					//System.out.println();
 				}
 
 				System.out.println("Used " + ((used_r / all_ren)*100) + "% of renewable energy (" + (int)used_r + "/" + (int)all_ren + ")");

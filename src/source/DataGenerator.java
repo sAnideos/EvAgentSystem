@@ -96,6 +96,7 @@ public class DataGenerator {
 			int random = rand.nextInt(energy_range) + 1;
 			renewable_energy[i] = random;
 			random = rand.nextInt(energy_range) + 1;
+			System.out.println();
 			non_renewable_energy[i] = random;
 		}
 		

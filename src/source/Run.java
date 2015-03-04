@@ -7,10 +7,11 @@ public class Run {
 	
 	public Run()
 	{
-		dt = new DataGenerator(10, 10, 5, 5);
-		//dt.generateCarData();
-		//dt.generateEnergyData();
-		dt.readFromFile();
+		dt = new DataGenerator(1000, 500, 250, 150);
+		dt.generateCarData();
+		dt.generateEnergyData();
+		dt.generateDiverseEnergy();
+		//dt.readFromFile();
 	}
 	
 	public void start()
