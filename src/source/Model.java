@@ -2,6 +2,8 @@ package source;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Set;
 
 import ilog.concert.IloException;
 import ilog.concert.IloLinearNumExpr;
@@ -10,6 +12,14 @@ import ilog.cplex.IloCplex;
 
 public class Model {
 
+	private int renewable_used = 0;
+	private int non_renewable_used = 0;
+	private int energy_used = 0;
+	private int renewable_all_used = 0;
+	private int charged = 0;
+	private int slots_used = 0;
+	private HashMap<Integer, ArrayList<Integer>> car_to_slot = new HashMap<Integer, ArrayList<Integer>>();
+	private HashMap<Integer, ArrayList<Integer>> slot_to_car = new HashMap<Integer, ArrayList<Integer>>();
 	
 	public void createAndRunModel(ArrayList<Car> evs, int ct, int[] energy, int chargers, int[] renewable_energy, int[] non_renewable_energy)
 	{
@@ -198,6 +208,32 @@ public class Model {
 					{
 						if(cp.getValue(var[ev][t]) == 1.0)
 						{
+							
+							slots_used++;
+							// add to car list
+							if(car_to_slot.get(ev) == null)
+							{
+								ArrayList<Integer> temp = new ArrayList<Integer>();
+								temp.add(t);
+								car_to_slot.put(ev, temp);
+							}
+							else
+							{
+								car_to_slot.get(ev).add(t);
+							}
+							
+							// add to slot list
+							if(slot_to_car.get(t) == null)
+							{
+								ArrayList<Integer> temp = new ArrayList<Integer>();
+								temp.add(ev);
+								slot_to_car.put(t, temp);
+							}
+							else
+							{
+								slot_to_car.get(t).add(ev);
+							}
+							
 							//System.out.print("O" + "  ");
 						}
 						else
@@ -215,13 +251,19 @@ public class Model {
 				{
 					if(cp.getValue(charges[ev]) == 1.0)
 					{
-						//System.out.println("Vehicle: " + (ev + 1) + " can be charged!");
+						charged ++;
+						System.out.println("Vehicle: " + (ev + 1) + " can be charged!");
 					}
 					else
 					{
-						//System.out.println("Vehicle: " + (ev + 1) + " cannot be charged...");
+						System.out.println("Vehicle: " + (ev + 1) + " cannot be charged...");
 					}
 				}
+				
+				System.out.println("Charged: " + charged + ", All: " + evs.size());
+				float all = evs.size();
+				charged = (int) ((charged / all) * 100);
+				
 				for(int i = 0; i < ct; i++)
 				{
 					int energy_used = 0;
@@ -268,13 +310,24 @@ public class Model {
 					//System.out.print("used " + ((used / non_renewable_energy[i])*100) + "% ");
 					//System.out.println();
 				}
-
+				renewable_used = (int) ((used_r / all_ren)*100);
 				System.out.println("Used " + ((used_r / all_ren)*100) + "% of renewable energy (" + (int)used_r + "/" + (int)all_ren + ")");
+				
+				non_renewable_used = (int) ((used_n / all_non)*100);
 				System.out.println("Used " + ((used_n / all_non)*100) + "% of non renewable energy (" + (int)used_n + "/" + (int)all_non + ")");
 				
+				energy_used = (int) (((used_r + used_n) / (all_ren + all_non))*100);
 				
-	        	DecimalFormat df = new DecimalFormat("#.00"); 	        	
-	        	System.out.print(df.format(((used_r / (used_r + used_n))*100)) + "% of energy used was reanewable!");
+	        	DecimalFormat df = new DecimalFormat("#.00"); 
+	        	renewable_all_used = (int) (((used_r / (used_r + used_n))*100));
+	        	
+	        	System.out.print(df.format(renewable_all_used) + "% of energy used was reanewable!");
+	        	
+	        	float all_slots = ct * chargers;
+	        	System.out.println("All slots: " + all_slots);
+	        	System.out.println("Slots used: " + slots_used);
+	        	slots_used = (int)((slots_used / all_slots) * 100);
+	        	
 
 			}
 
@@ -285,6 +338,43 @@ public class Model {
 		}
 		
 	}
+	
+	public int getRenEnergy()
+	{
+		return renewable_used;
+	}
+	
+	public int getNonRenEnergy()
+	{
+		return non_renewable_used;
+	}
+	
+	public int getEnergy()
+	{
+		return energy_used;
+	}
+
+	public HashMap<Integer, ArrayList<Integer>> getCar_to_slot() {
+		return car_to_slot;
+	}
+
+	public HashMap<Integer, ArrayList<Integer>> getSlot_to_car() {
+		return slot_to_car;
+	}
+
+	public int getRenewable_all_used() {
+		return renewable_all_used;
+	}
+
+	public int getSlots_used() {
+		return slots_used;
+	}
+
+	public int getCharged() {
+		return charged;
+	}
+	
+	
 	
 	
 }
