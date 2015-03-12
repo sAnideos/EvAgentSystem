@@ -1,11 +1,14 @@
 package source;
 
+import java.util.ArrayList;
+
 public class Car {
 
 	private int start_time; // ti wra mporei na er8ei sto sta8mo
 	private int end_time; // ti wra prepei na fygei apo to sta8mo
 	private int needs; // how much energy it needs (in time slots)
 	private int completed; // how much of 'needs' is completed
+	private ArrayList<Integer> slots_used = new ArrayList<Integer>();
 	
 	
 	public int getStartTime() {
@@ -38,6 +41,14 @@ public class Car {
 		needs--;
 	}
 	
+	public void addSlot(Integer s)
+	{
+		slots_used.add(s);
+	}
 	
+	public ArrayList<Integer> getSlots()
+	{
+		return slots_used;
+	}
 	
 }

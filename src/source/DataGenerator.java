@@ -99,7 +99,7 @@ public class DataGenerator {
 			int random = rand.nextInt(energy_range) + 1;
 			renewable_energy[i] = random;
 			random = rand.nextInt(energy_range) + 1;
-			System.out.println();
+			//System.out.println();
 			non_renewable_energy[i] = random;
 		}
 		
@@ -161,7 +161,7 @@ public class DataGenerator {
 	 * then the triplets mean - (start time, end time, energy the ev needs)
 	 * and the last lines of integers is the energy in each time slot
 	 */
-	public void readFromFile()
+	public void readFromFile(String path)
 	{
 		FileInputStream fstream = null;
 		try {

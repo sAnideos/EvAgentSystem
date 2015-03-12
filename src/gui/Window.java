@@ -6,11 +6,15 @@ import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 
 import javax.swing.BorderFactory;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
@@ -20,6 +24,8 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JProgressBar;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.Border;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -27,6 +33,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 
+import source.Car;
 import source.DataGenerator;
 import source.Model;
 
@@ -42,6 +49,8 @@ public class Window {
 	private int evs = 1;
 	private int time_slots = 2;
 	private int chargers = 1;
+	private ArrayList<Car> car_to_slot;
+	private int read_file = 0; // 1 - button "File" was pressed, 0 - user input
 	
 	private class ActionHandler implements ActionListener {
 
@@ -60,11 +69,18 @@ public class Window {
 			
 			if(e.getActionCommand().compareTo("compute") == 0)
 			{
-				System.out.println("time_slots: " + time_slots);
-				dt = new DataGenerator(evs, time_slots, chargers, energy_range);
-				dt.generateCarData();
-				dt.generateEnergyData();
-				dt.generateDiverseEnergy();
+	        	table_model_car.setRowCount(0);
+				consoleScreen.setText(null);
+				//System.out.println("time_slots: " + time_slots);
+				if(!(read_file == 1))
+				{
+					dt = new DataGenerator(evs, time_slots, chargers, energy_range);
+					dt.generateCarData();
+					dt.generateEnergyData();
+					dt.generateDiverseEnergy();					
+				}
+				read_file = 0;
+				//consoleScreen.setText("" + read_file);
 				model.createAndRunModel(dt.getCars(), dt.getTime_slots(),
 						dt.getEnergy(), dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy());
 				
@@ -75,24 +91,27 @@ public class Window {
 				slotProgressBar.setValue(model.getSlots_used());
 				chargedProgressBar.setValue(model.getCharged());
 				
-				HashMap<Integer, ArrayList<Integer>> hash = model.getCar_to_slot();
+				car_to_slot = model.getCar_to_slot();
 
 				
-				Set<Integer> keyset = model.getCar_to_slot().keySet();
-				
-		    	for(Integer key : keyset)
+				int counter = 1;
+		    	for(Car c : car_to_slot)
 		    	{
-		    		StringBuilder strb = new StringBuilder();
-		    		for(Integer t: hash.get(key))
+		    		if(!c.getSlots().isEmpty())
 		    		{
-		    			strb.append(t + ", ");
-		    			
-		    			//System.out.println(t);
+			    		StringBuilder strb = new StringBuilder();
+			    		for(Integer t: c.getSlots())
+			    		{
+			    			strb.append(t + ", ");
+			    			
+			    			//System.out.println(t);
+			    		}
+			    		String print = strb.toString();
+			    		print = print.substring(0, print.length()-2);
+			    		table_model_car.addRow(new Object[]{counter, print});
+			    		
 		    		}
-		    		String print = strb.toString();
-		    		print = print.substring(0, print.length()-2);
-		    		table_model_car.addRow(new Object[]{key, print});
-		    		
+		    		counter++;
 		    	}
 		    	int rows = table_model_car.getRowCount();
 		    	int max = -1;
@@ -105,7 +124,6 @@ public class Window {
 	                max = Math.max(heightPreferable, max);
 	            }
 
-		    	System.out.println("MAX: " + max);
 				byCarTable.getColumnModel().getColumn(1).setMaxWidth(max + 25);
 				byCarTable.getColumnModel().getColumn(1).setMinWidth(max + 25);
 				
@@ -205,6 +223,23 @@ public class Window {
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
+
+		try {
+			UIManager.setLookAndFeel(
+			        UIManager.getSystemLookAndFeelClassName());
+		} catch (ClassNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (InstantiationException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IllegalAccessException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (UnsupportedLookAndFeelException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
@@ -237,7 +272,7 @@ public class Window {
 		
 		frmElectricVehicleAgent = new JFrame();
 		frmElectricVehicleAgent.setTitle("Electric Vehicle Agent System");
-		frmElectricVehicleAgent.setBounds(100, 100, 710, 685);
+		frmElectricVehicleAgent.setBounds(100, 100, 710, 492);
 		frmElectricVehicleAgent.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmElectricVehicleAgent.getContentPane().setLayout(null);
 		
@@ -304,11 +339,26 @@ public class Window {
 		settingsPanel.add(chargerSlider);
 		
 		btnRandom = new JButton("Randomize");
-		btnRandom.setBounds(37, 294, 101, 23);
+		btnRandom.setBounds(72, 294, 101, 23);
 		settingsPanel.add(btnRandom);
 		
 		btnFile = new JButton("File");
-		btnFile.setBounds(37, 328, 101, 23);
+		btnFile.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				JFileChooser chooser = new JFileChooser();
+				chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+				int option = chooser.showOpenDialog(frmElectricVehicleAgent); // parentComponent must a component like JFrame, JDialog...
+				if (option == JFileChooser.APPROVE_OPTION) {
+				   File selectedFile = chooser.getSelectedFile();
+				   String path = selectedFile.getAbsolutePath();
+				  // System.out.println(path.toString());
+				   dt = new DataGenerator(0,0,0,0);
+				   dt.readFromFile(path);
+				   read_file = 1;
+				}
+			}
+		});
+		btnFile.setBounds(72, 328, 101, 23);
 		settingsPanel.add(btnFile);
 		
 		energyTextPane = new JTextPane();
@@ -336,18 +386,18 @@ public class Window {
 		settingsPanel.add(chargerTextPane);
 		
 		controlPanel = new JPanel();
-		controlPanel.setBounds(270, 594, 411, 44);
+		controlPanel.setBounds(270, 427, 411, 26);
 		frmElectricVehicleAgent.getContentPane().add(controlPanel);
 		controlPanel.setLayout(null);
 		
 		btnCompute = new JButton("Compute");
 		btnCompute.setActionCommand("compute");
 		btnCompute.addActionListener(action);
-		btnCompute.setBounds(312, 11, 89, 23);
+		btnCompute.setBounds(169, 0, 89, 23);
 		controlPanel.add(btnCompute);
 		
 		statsPanel = new JPanel();
-		statsPanel.setBounds(270, 234, 411, 349);
+		statsPanel.setBounds(270, 234, 411, 194);
 		frmElectricVehicleAgent.getContentPane().add(statsPanel);
 		statsPanel.setLayout(null);
 		
@@ -364,16 +414,20 @@ public class Window {
 		statsPanel.add(lblNonRenewablesUsed);
 		
 		energyProgressBar = new JProgressBar();
+		energyProgressBar.setForeground(new Color(50, 205, 50));
+		energyProgressBar.setEnabled(true);
 		energyProgressBar.setStringPainted(true);
 		energyProgressBar.setBounds(255, 11, 146, 14);
 		statsPanel.add(energyProgressBar);
 		
 		renProgressBar = new JProgressBar();
+		renProgressBar.setForeground(new Color(50, 205, 50));
 		renProgressBar.setStringPainted(true);
 		renProgressBar.setBounds(255, 36, 146, 14);
 		statsPanel.add(renProgressBar);
 		
 		nonRenProgressBar = new JProgressBar();
+		nonRenProgressBar.setForeground(new Color(220, 20, 60));
 		nonRenProgressBar.setStringPainted(true);
 		nonRenProgressBar.setValue(0);
 		nonRenProgressBar.setMinimum(0);
@@ -386,6 +440,7 @@ public class Window {
 		statsPanel.add(lblCarsCharged);
 		
 		chargedProgressBar = new JProgressBar();
+		chargedProgressBar.setForeground(new Color(0, 0, 205));
 		chargedProgressBar.setStringPainted(true);
 		chargedProgressBar.setBounds(255, 113, 146, 14);
 		statsPanel.add(chargedProgressBar);
@@ -395,6 +450,7 @@ public class Window {
 		statsPanel.add(lblTimeSlotsUsed);
 		
 		slotProgressBar = new JProgressBar();
+		slotProgressBar.setForeground(new Color(0, 0, 0));
 		slotProgressBar.setStringPainted(true);
 		slotProgressBar.setBounds(255, 138, 146, 14);
 		statsPanel.add(slotProgressBar);
@@ -402,14 +458,15 @@ public class Window {
 		lblRenewablesAll = new JLabel("Renewables/All Energy Used");
 		lblRenewablesAll.setBounds(10, 86, 174, 14);
 		statsPanel.add(lblRenewablesAll);
-		
+
 		energyAllProgressBar = new JProgressBar();
+		energyAllProgressBar.setForeground(new Color(50, 205, 50));
 		energyAllProgressBar.setStringPainted(true);
 		energyAllProgressBar.setBounds(255, 86, 146, 14);
 		statsPanel.add(energyAllProgressBar);
 		
 		scrollPane = new JScrollPane();
-		scrollPane.setBounds(10, 161, 391, 177);
+		scrollPane.setBounds(10, 161, 391, 29);
 		statsPanel.add(scrollPane);
 		
 		consoleScreen = new JTextPane();
@@ -466,12 +523,27 @@ public class Window {
 		
 		byCarTable.getColumnModel().getColumn(0).setMaxWidth(30);
 		byCarTable.getColumnModel().getColumn(0).setMinWidth(30);
+		
+		
+		byCarTable.addMouseListener(new MouseAdapter() {
+		    @Override
+		    public void mouseClicked(final MouseEvent e) {
+		        if (e.getClickCount() == 1) {
+		            JTable target = (JTable)e.getSource();
+		            int row = target.getSelectedRow();
+		            consoleScreen.setText(""+byCarTable.getModel().getValueAt(row, 0));
+		            int position = (int) byCarTable.getModel().getValueAt(row, 0);
+		            consoleScreen.setText("Was available from: " + car_to_slot.get(position - 1).getStartTime() + " to "
+		            		+ car_to_slot.get(position - 1).getEndTime());
+		        }
+		    }
+		});
 
 		//byCarTable.getColumnModel().getColumn(1).setMaxWidth(800);
 		//byCarTable.getColumnModel().getColumn(1).setMinWidth(800);
 		
 		
-		byCarPane = new JScrollPane(byCarTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+		byCarPane = new JScrollPane(byCarTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		byCarPane.setVerticalScrollBar(byCarPane.createVerticalScrollBar());
 		tabbedPane.addTab("By Car", null, byCarPane, null);
 		
