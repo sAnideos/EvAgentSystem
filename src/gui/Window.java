@@ -11,11 +11,13 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
 import java.util.Set;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JSlider;
@@ -50,6 +52,7 @@ public class Window {
 	private int time_slots = 2;
 	private int chargers = 1;
 	private ArrayList<Car> car_to_slot;
+	private HashMap<Integer, ArrayList<Integer>> slot_to_car;
 	private int read_file = 0; // 1 - button "File" was pressed, 0 - user input
 	
 	private class ActionHandler implements ActionListener {
@@ -70,6 +73,7 @@ public class Window {
 			if(e.getActionCommand().compareTo("compute") == 0)
 			{
 	        	table_model_car.setRowCount(0);
+	        	table_model_slot.setRowCount(0);
 				consoleScreen.setText(null);
 				//System.out.println("time_slots: " + time_slots);
 				if(!(read_file == 1))
@@ -81,6 +85,7 @@ public class Window {
 				}
 				read_file = 0;
 				//consoleScreen.setText("" + read_file);
+				model = new Model();
 				model.createAndRunModel(dt.getCars(), dt.getTime_slots(),
 						dt.getEnergy(), dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy());
 				
@@ -113,6 +118,10 @@ public class Window {
 		    		}
 		    		counter++;
 		    	}
+		    	
+		    	
+		    	
+		    	
 		    	int rows = table_model_car.getRowCount();
 		    	int max = -1;
 		    	for(int i = 0; i < rows; i++)
@@ -127,6 +136,106 @@ public class Window {
 				byCarTable.getColumnModel().getColumn(1).setMaxWidth(max + 25);
 				byCarTable.getColumnModel().getColumn(1).setMinWidth(max + 25);
 				
+				
+				// print slot to car
+				slot_to_car = model.getSlot_to_car();
+				
+				Set<Integer> keyset = slot_to_car.keySet();
+				
+				for(Integer key : keyset)
+				{
+					StringBuilder strb = new StringBuilder();
+					for(Integer t : slot_to_car.get(key))
+					{
+						strb.append((t + 1) + ", ");
+					}
+					String print = strb.toString();
+					print = print.substring(0, print.length()-2);
+					table_model_slot.addRow(new Object[]{key, print});
+				}
+				
+		    	rows = table_model_slot.getRowCount();
+		    	max = -1;
+		    	for(int i = 0; i < rows; i++)
+		    	{
+		    		TableCellRenderer cellRenderer = bySlotTable.getCellRenderer(i, 1);
+	                Object valueAt = bySlotTable.getValueAt(i, 1);
+	                Component tableCellRendererComponent = cellRenderer.getTableCellRendererComponent(bySlotTable, valueAt, false, false, i, 1);
+	                int heightPreferable = tableCellRendererComponent.getPreferredSize().width;
+	                max = Math.max(heightPreferable, max);
+	            }
+
+		    	bySlotTable.getColumnModel().getColumn(1).setMaxWidth(max + 25);
+		    	bySlotTable.getColumnModel().getColumn(1).setMinWidth(max + 25);
+				
+				
+				btnSaveAs.setEnabled(true);
+			}
+			else if(e.getActionCommand().compareTo("save_as") == 0)
+			{
+				if(dt != null)
+				{
+					JFileChooser chooser = new JFileChooser();
+					chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+					int option = chooser.showSaveDialog(frmElectricVehicleAgent); // parentComponent must a component like JFrame, JDialog...
+					if (option == JFileChooser.APPROVE_OPTION) {
+					   File selectedFile = chooser.getSelectedFile();
+					   String path = selectedFile.getAbsolutePath();
+	
+					   path = path.replaceAll(".txt", "");
+					   path = path.concat(".txt");
+					   File f = new File(path);
+					   if(f.exists()) 
+					   { 
+						   int response = JOptionPane.showConfirmDialog(null, //
+						            "Do you want to replace the existing file?", //
+						            "Confirm", JOptionPane.YES_NO_OPTION, //
+						            JOptionPane.QUESTION_MESSAGE);
+						    if (response == JOptionPane.YES_OPTION) {
+						    	dt.writeToFile(path);
+						    } 
+	
+					   }
+					   else
+					   {
+						   dt.writeToFile(path);
+					   }
+					   
+					}
+					btnSaveAs.setEnabled(false);
+				}
+				else
+				{
+					consoleScreen.setText("Compute the solution first!");
+				}
+			}
+			else if(e.getActionCommand().compareTo("random") == 0)
+			{
+
+        	   Random r = new Random();
+        	   int temp = r.nextInt(carSlider.getMaximum()) + 1;
+        	   carTextPane.setText("" + temp);
+        	   carSlider.setValue(temp);
+        	   //System.out.println("evs: " + evs);
+        	   energySlider.setMaximum(temp);
+        	   //System.out.println("energy: " + energy_range);
+
+
+        	   temp = r.nextInt(temp) + 1;
+        	   energyTextPane.setText("" + temp);
+        	   energySlider.setValue(temp);
+
+        	   temp = r.nextInt(100) + 2;
+        	   slotTextPane.setText("" + temp);
+        	   slotSlider.setValue(temp);
+        	  //System.out.println("time_slots: " + time_slots);
+
+
+        	   temp = r.nextInt(100) + 1;
+        	   chargerTextPane.setText("" + temp);
+        	   chargerSlider.setValue(temp);
+        	   //System.out.println("chargers: " + chargers);
+
 			}
 			
 		}
@@ -214,6 +323,7 @@ public class Window {
 	private JProgressBar energyAllProgressBar;	
 	private JScrollPane scrollPane;
 	private JTextPane consoleScreen;
+	private JButton btnSaveAs;
 	
 
 	
@@ -339,6 +449,8 @@ public class Window {
 		settingsPanel.add(chargerSlider);
 		
 		btnRandom = new JButton("Randomize");
+		btnRandom.setActionCommand("random");
+		btnRandom.addActionListener(action);
 		btnRandom.setBounds(72, 294, 101, 23);
 		settingsPanel.add(btnRandom);
 		
@@ -358,32 +470,43 @@ public class Window {
 				}
 			}
 		});
-		btnFile.setBounds(72, 328, 101, 23);
+		btnFile.setBounds(10, 328, 101, 23);
 		settingsPanel.add(btnFile);
 		
 		energyTextPane = new JTextPane();
+		energyTextPane.setText("1");
 		energyTextPane.setBounds(183, 83, 34, 20);
 		energyTextPane.setBorder(blackline);
 		energyTextPane.setEditable(false);
 		settingsPanel.add(energyTextPane);
 		
 		carTextPane = new JTextPane();
+		carTextPane.setText("1");
 		carTextPane.setBounds(183, 11, 34, 20);
 		carTextPane.setBorder(blackline);
 		carTextPane.setEditable(false);
 		settingsPanel.add(carTextPane);
 		
 		slotTextPane = new JTextPane();
+		slotTextPane.setText("2");
 		slotTextPane.setBounds(183, 142, 34, 20);
 		slotTextPane.setBorder(blackline);
 		slotTextPane.setEditable(false);
 		settingsPanel.add(slotTextPane);
 		
 		chargerTextPane = new JTextPane();
+		chargerTextPane.setText("1");
 		chargerTextPane.setBounds(183, 212, 34, 20);
 		chargerTextPane.setBorder(blackline);
 		chargerTextPane.setEditable(false);
 		settingsPanel.add(chargerTextPane);
+		
+		btnSaveAs = new JButton("Save As");
+		btnSaveAs.setActionCommand("save_as");
+		btnSaveAs.addActionListener(action);
+		btnSaveAs.setBounds(139, 328, 101, 23);
+		btnSaveAs.setEnabled(false);
+		settingsPanel.add(btnSaveAs);
 		
 		controlPanel = new JPanel();
 		controlPanel.setBounds(270, 427, 411, 26);
@@ -476,13 +599,14 @@ public class Window {
 		tabbedPane.setBounds(270, 11, 411, 215);
 		frmElectricVehicleAgent.getContentPane().add(tabbedPane);
 		
-		bySlotPane = new JScrollPane();
-		bySlotPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
-		tabbedPane.addTab("By Slot", null, bySlotPane, null);
+		//bySlotPane = new JScrollPane();
+		//bySlotPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+		//tabbedPane.addTab("By Slot", null, bySlotPane, null);
 		
 
 		bySlotTable = new JTable();
-		bySlotPane.setViewportView(bySlotTable);
+		bySlotTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+		//bySlotPane.setViewportView(bySlotTable);
 
 		
 		byCarTable = new JTable();
@@ -511,7 +635,7 @@ public class Window {
 		table_model_car.addColumn("Car");
 		table_model_car.addColumn("Time Slots");
 
-		table_model_slot.addColumn("Time Slot");
+		table_model_slot.addColumn("Slot");
 		table_model_slot.addColumn("Cars");
 		//table_model_slot.addRow(new Object[]{1,2});
 		
@@ -534,7 +658,7 @@ public class Window {
 		            consoleScreen.setText(""+byCarTable.getModel().getValueAt(row, 0));
 		            int position = (int) byCarTable.getModel().getValueAt(row, 0);
 		            consoleScreen.setText("Was available from: " + car_to_slot.get(position - 1).getStartTime() + " to "
-		            		+ car_to_slot.get(position - 1).getEndTime());
+		            		+ car_to_slot.get(position - 1).getEndTime() + " and its needs was: " + car_to_slot.get(position - 1).getNeeds() + " energy units.");
 		        }
 		    }
 		});
@@ -548,7 +672,9 @@ public class Window {
 		tabbedPane.addTab("By Car", null, byCarPane, null);
 		
 
-		
+		bySlotPane = new JScrollPane(bySlotTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		bySlotPane.setVerticalScrollBar(bySlotPane.createVerticalScrollBar());
+		tabbedPane.addTab("By Slot", null, bySlotPane, null);
 
 		
 		model = new Model();

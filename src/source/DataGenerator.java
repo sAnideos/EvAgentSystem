@@ -5,6 +5,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -97,10 +99,12 @@ public class DataGenerator {
 		for(int i = 0; i < time_slots; i++)
 		{
 			int random = rand.nextInt(energy_range) + 1;
-			renewable_energy[i] = random;
-			random = rand.nextInt(energy_range) + 1;
+			int rendom = rand.nextInt(random) + 1; // random renewable energy
+			renewable_energy[i] = rendom;
+			//random = rand.nextInt(energy_range) + 1;
 			//System.out.println();
-			non_renewable_energy[i] = random;
+			non_renewable_energy[i] = random - rendom;
+			System.out.println("Ren energy: " + renewable_energy[i] + " + " + non_renewable_energy[i] + " = " + (renewable_energy[i]+non_renewable_energy[i]));
 		}
 		
 	}
@@ -165,7 +169,7 @@ public class DataGenerator {
 	{
 		FileInputStream fstream = null;
 		try {
-			fstream = new FileInputStream("Data.txt");
+			fstream = new FileInputStream(path);
 		} catch (FileNotFoundException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -234,8 +238,46 @@ public class DataGenerator {
 			e.printStackTrace();
 		}
 
-
-		
+	}
+	
+	/* file structure
+	 * first line - #evs
+	 * second line - #time_slots
+	 * third line - #chargers
+	 * then the triplets mean - (start time, end time, energy the ev needs)
+	 * and the last lines of integers is the energy in each time slot
+	 */
+//	private int[] renewable_energy;
+//	private int[] non_renewable_energy;
+	public void writeToFile(String path)
+	{
+		try {
+			
+			PrintWriter writer = new PrintWriter(path, "UTF-8");
+			
+			writer.println(evs);
+			writer.println(time_slots);
+			writer.println(chargers);
+			
+			for(Car c: cars)
+			{
+				writer.println(c.getStartTime() + " " + c.getEndTime() + " " + c.getNeeds());
+			}
+			
+			for(int i = 0; i < time_slots; i++)
+			{
+				writer.println(renewable_energy[i] + " " + non_renewable_energy[i]);
+			}
+			
+			writer.close();
+			
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	
