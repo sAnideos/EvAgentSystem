@@ -4,11 +4,15 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
@@ -41,6 +45,7 @@ import source.Model;
 
 import javax.swing.JTextPane;
 import javax.swing.JScrollPane;
+import javax.swing.SwingConstants;
 
 public class Window {
 
@@ -51,6 +56,7 @@ public class Window {
 	private int evs = 1;
 	private int time_slots = 2;
 	private int chargers = 1;
+	private double w1 = 0.5;
 	private ArrayList<Car> car_to_slot;
 	private HashMap<Integer, ArrayList<Integer>> slot_to_car;
 	private int read_file = 0; // 1 - button "File" was pressed, 0 - user input
@@ -87,7 +93,7 @@ public class Window {
 				//consoleScreen.setText("" + read_file);
 				model = new Model();
 				model.createAndRunModel(dt.getCars(), dt.getTime_slots(),
-						dt.getEnergy(), dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy());
+						dt.getEnergy(), dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy(), w1);
 				
 				renProgressBar.setValue(model.getRenEnergy());
 				nonRenProgressBar.setValue(model.getNonRenEnergy());
@@ -202,6 +208,7 @@ public class Window {
 					   }
 					   
 					}
+					energyAllProgressBar.setBackground(Color.RED);
 					btnSaveAs.setEnabled(false);
 				}
 				else
@@ -272,11 +279,20 @@ public class Window {
         	   slotTextPane.setText("" + time_slots);
         	  //System.out.println("time_slots: " + time_slots);
            }
-           else
+           else if(source.getName().equals("charger"))
            {
         	   chargers = source.getValue();
         	   chargerTextPane.setText("" + chargers);
         	   //System.out.println("chargers: " + chargers);
+           }
+           else
+           {
+				w1 = 1.0 - (source.getValue() / 100.0);
+				DecimalFormat df = new DecimalFormat("0.00"); 
+				String temp = df.format(w1).replace(",", ".");
+				moreSlotsPane.setText(temp);
+				temp = df.format(1.0 - w1).replace(",", ".");
+				moreChargePane.setText(temp);
            }
         }
 	}
@@ -324,6 +340,10 @@ public class Window {
 	private JScrollPane scrollPane;
 	private JTextPane consoleScreen;
 	private JButton btnSaveAs;
+	private JButton btnCopyAll;
+	private JSlider weightSlider;
+	private JTextPane moreSlotsPane;
+	private JTextPane moreChargePane;
 	
 
 	
@@ -387,7 +407,7 @@ public class Window {
 		frmElectricVehicleAgent.getContentPane().setLayout(null);
 		
 		settingsPanel = new JPanel();
-		settingsPanel.setBounds(10, 11, 250, 362);
+		settingsPanel.setBounds(10, 11, 250, 442);
 		frmElectricVehicleAgent.getContentPane().add(settingsPanel);
 		settingsPanel.setLayout(null);
 		
@@ -411,6 +431,7 @@ public class Window {
 		settingsPanel.add(lblCars);
 		
 		carSlider = new JSlider();
+		carSlider.setMaximum(250);
 		carSlider.setMinorTickSpacing(5);
 		carSlider.setValue(1);
 		carSlider.setMinimum(1);
@@ -425,6 +446,7 @@ public class Window {
 		settingsPanel.add(lblTimeSlots);
 		
 		slotSlider = new JSlider();
+		slotSlider.setMaximum(287);
 		slotSlider.setMinorTickSpacing(5);
 		slotSlider.setPaintTicks(true);
 		slotSlider.setValue(2);
@@ -451,7 +473,7 @@ public class Window {
 		btnRandom = new JButton("Randomize");
 		btnRandom.setActionCommand("random");
 		btnRandom.addActionListener(action);
-		btnRandom.setBounds(72, 294, 101, 23);
+		btnRandom.setBounds(72, 374, 101, 23);
 		settingsPanel.add(btnRandom);
 		
 		btnFile = new JButton("File");
@@ -470,7 +492,7 @@ public class Window {
 				}
 			}
 		});
-		btnFile.setBounds(10, 328, 101, 23);
+		btnFile.setBounds(10, 408, 101, 23);
 		settingsPanel.add(btnFile);
 		
 		energyTextPane = new JTextPane();
@@ -504,9 +526,44 @@ public class Window {
 		btnSaveAs = new JButton("Save As");
 		btnSaveAs.setActionCommand("save_as");
 		btnSaveAs.addActionListener(action);
-		btnSaveAs.setBounds(139, 328, 101, 23);
+		btnSaveAs.setBounds(139, 408, 101, 23);
 		btnSaveAs.setEnabled(false);
 		settingsPanel.add(btnSaveAs);
+		
+		JLabel lblObjectiveFunctionWeight = new JLabel("Objective Function Weight");
+		lblObjectiveFunctionWeight.setHorizontalAlignment(SwingConstants.CENTER);
+		lblObjectiveFunctionWeight.setBounds(33, 288, 184, 14);
+		settingsPanel.add(lblObjectiveFunctionWeight);
+		
+		weightSlider = new JSlider();
+		weightSlider.setPaintTicks(true);
+		weightSlider.setBounds(54, 340, 142, 23);
+		weightSlider.setName("weight");
+		weightSlider.addChangeListener(change);
+		settingsPanel.add(weightSlider);
+		
+		moreSlotsPane = new JTextPane();
+		moreSlotsPane.setText("0.5");
+		moreSlotsPane.setEditable(false);
+		moreSlotsPane.setBorder(blackline);
+		moreSlotsPane.setBounds(10, 340, 34, 20);
+		settingsPanel.add(moreSlotsPane);
+		
+		moreChargePane = new JTextPane();
+		moreChargePane.setText("0.5");
+		moreChargePane.setEditable(false);
+		moreChargePane.setBorder(blackline);
+		moreChargePane.setBounds(206, 340, 34, 20);
+		settingsPanel.add(moreChargePane);
+		
+		JLabel lblUseMoreSlots = new JLabel("Use more Slots");
+		lblUseMoreSlots.setBounds(10, 313, 89, 14);
+		settingsPanel.add(lblUseMoreSlots);
+		
+		JLabel lblChargeMoreCars = new JLabel("Charge more Cars");
+		lblChargeMoreCars.setHorizontalAlignment(SwingConstants.RIGHT);
+		lblChargeMoreCars.setBounds(139, 313, 101, 14);
+		settingsPanel.add(lblChargeMoreCars);
 		
 		controlPanel = new JPanel();
 		controlPanel.setBounds(270, 427, 411, 26);
@@ -518,6 +575,21 @@ public class Window {
 		btnCompute.addActionListener(action);
 		btnCompute.setBounds(169, 0, 89, 23);
 		controlPanel.add(btnCompute);
+		
+		btnCopyAll = new JButton("Copy All");
+		btnCopyAll.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				
+				String myString = (energyProgressBar.getString() + " " + energyAllProgressBar.getString() + ""
+						+ " " + chargedProgressBar.getString()).replaceAll("%", "");
+				StringSelection stringSelection = new StringSelection (myString);
+				Clipboard clpbrd = Toolkit.getDefaultToolkit ().getSystemClipboard ();
+				clpbrd.setContents (stringSelection, null);
+				
+			}
+		});
+		btnCopyAll.setBounds(312, 0, 89, 23);
+		controlPanel.add(btnCopyAll);
 		
 		statsPanel = new JPanel();
 		statsPanel.setBounds(270, 234, 411, 194);
@@ -583,6 +655,7 @@ public class Window {
 		statsPanel.add(lblRenewablesAll);
 
 		energyAllProgressBar = new JProgressBar();
+		energyAllProgressBar.setBackground(Color.WHITE);
 		energyAllProgressBar.setForeground(new Color(50, 205, 50));
 		energyAllProgressBar.setStringPainted(true);
 		energyAllProgressBar.setBounds(255, 86, 146, 14);
@@ -594,6 +667,47 @@ public class Window {
 		
 		consoleScreen = new JTextPane();
 		scrollPane.setViewportView(consoleScreen);
+		
+		JButton btnCopy = new JButton("copy");
+		btnCopy.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				
+				String myString = energyProgressBar.getString().replace("%", "");
+				StringSelection stringSelection = new StringSelection (myString);
+				Clipboard clpbrd = Toolkit.getDefaultToolkit ().getSystemClipboard ();
+				clpbrd.setContents (stringSelection, null);
+				
+			}
+		});
+		btnCopy.setBounds(190, 7, 55, 23);
+		statsPanel.add(btnCopy);
+		
+		JButton button_2 = new JButton("copy");
+		button_2.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				
+				String myString = energyAllProgressBar.getString().replace("%", "");
+				StringSelection stringSelection = new StringSelection (myString);
+				Clipboard clpbrd = Toolkit.getDefaultToolkit ().getSystemClipboard ();
+				clpbrd.setContents (stringSelection, null);
+				
+			}
+		});
+		button_2.setBounds(190, 82, 55, 23);
+		statsPanel.add(button_2);
+		
+		JButton button_3 = new JButton("copy");
+		button_3.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				String myString = chargedProgressBar.getString().replace("%", "");
+				StringSelection stringSelection = new StringSelection (myString);
+				Clipboard clpbrd = Toolkit.getDefaultToolkit ().getSystemClipboard ();
+				clpbrd.setContents (stringSelection, null);
+				
+			}
+		});
+		button_3.setBounds(190, 107, 55, 23);
+		statsPanel.add(button_3);
 		
 		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 		tabbedPane.setBounds(270, 11, 411, 215);

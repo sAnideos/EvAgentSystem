@@ -208,13 +208,29 @@ public class DataGenerator {
 						//" ends at: " + car.getEndTime() + " needs: " + car.getNeeds());
 				cars.add(car);
 			}
-
+			
+			line = br.readLine();
+			String[] temp1 = line.split(" ");
+			int[] car_properties = new int[temp1.length];
+			
+			while(car_properties.length == 3)
+			{
+				line = br.readLine();
+				temp1 = line.split(" ");
+				car_properties = new int[temp1.length];
+			}
+			
+			for(Car c: cars)
+			{
+				System.out.println(c.getStartTime() + ", " + c.getEndTime() + ", " + c.getNeeds());
+			}
+				
 			renewable_energy = new int[time_slots];
 			non_renewable_energy = new int[time_slots];
 
 			for(int i = 0; i < time_slots; i++)
 			{
-				line = br.readLine();
+
 
 				String[] temp = line.split(" ");
 				int[] energy_amount = new int[temp.length];
@@ -226,7 +242,7 @@ public class DataGenerator {
 				non_renewable_energy[i] = energy_amount[1];	
 				System.out.print(renewable_energy[i] + ", ");
 				System.out.println(non_renewable_energy[i]);
-
+				line = br.readLine();
 				//energy[i] = Integer.parseInt(line);
 				//System.out.println(energy[i]);
 

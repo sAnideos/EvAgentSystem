@@ -23,9 +23,11 @@ public class Model {
 	private ArrayList car_to_slot;
 	private HashMap<Integer, ArrayList<Integer>> slot_to_car = new HashMap<Integer, ArrayList<Integer>>();
 	
-	public void createAndRunModel(ArrayList<Car> evs, int ct, int[] energy, int chargers, int[] renewable_energy, int[] non_renewable_energy)
+	public void createAndRunModel(ArrayList<Car> evs, int ct, int[] energy, int chargers, int[] renewable_energy, int[] non_renewable_energy, double w1)
 	{
 		
+		double w2 = 1.0 - w1;
+
 		try {
 			 
 			IloCplex cp = new IloCplex(); // create the model
@@ -149,6 +151,7 @@ public class Model {
 
 			// ATIKEIMENIKES SYNARTISEIS
 			
+			
 			// 1)
 			// antikeimeniki synartisi, megistpopoiisi asswn
 			IloLinearNumExpr p_charges = cp.linearNumExpr();
@@ -158,10 +161,13 @@ public class Model {
 				int end = evs.get(ev).getEndTime() + 1;
 				for(int time = start; time < end; time++)
 				{
-					p_charges.addTerm(1, var[ev][time]);
+					p_charges.addTerm(w1, var[ev][time]);
 				}
 			}
-
+			for(int ev = 0; ev < evs.size(); ev++)
+			{
+				p_charges.addTerm(w2, charges[ev]);
+			}
 			
 			
 			// na xrisimopoiei perissotero ananewsimes
@@ -184,10 +190,7 @@ public class Model {
 			// megistopoiisi oximnatwn pou fortizoun
 			/*
 			IloLinearNumExpr p_charges = cp.linearNumExpr();
-			for(int ev = 0; ev < evs.size(); ev++)
-			{
-				p_charges.addTerm(1, charges[ev]);
-			}
+
 			*/
 			cp.addMaximize(cp.sum(p_charges, p_energy));
 				
@@ -315,25 +318,29 @@ public class Model {
 					//System.out.print("used " + ((used / non_renewable_energy[i])*100) + "% ");
 					//System.out.println();
 				}
-				renewable_used = (int) ((used_r / all_ren)*100);
+				renewable_used = Math.round(((used_r / all_ren)*100));
 				//System.out.println("Used " + ((used_r / all_ren)*100) + "% of renewable energy (" + (int)used_r + "/" + (int)all_ren + ")");
 				
-				non_renewable_used = (int) ((used_n / all_non)*100);
+				non_renewable_used = Math.round(((used_n / all_non)*100));
+				System.out.println(((used_n / all_non)*100));
 				//System.out.println("Used " + ((used_n / all_non)*100) + "% of non renewable energy (" + (int)used_n + "/" + (int)all_non + ")");
 				
-				energy_used = (int) (((used_r + used_n) / (all_ren + all_non))*100);
+				energy_used = Math.round((((used_r + used_n) / (all_ren + all_non))*100)) ;
 				
 	        	DecimalFormat df = new DecimalFormat("#.00"); 
-	        	renewable_all_used = (int) (((used_r / (used_r + used_n))*100));
+	        	renewable_all_used = Math.round((((used_r / (used_r + used_n))*100)));
+	        	System.out.println(used_n);
+	        	System.out.println((int) (((used_n / (used_r + used_n))*100)));
 	        	
 	        	//System.out.print(df.format(renewable_all_used) + "% of energy used was reanewable!");
 	        	
 	        	float all_slots = ct * chargers;
 	        	//System.out.println("All slots: " + all_slots);
 	        	//System.out.println("Slots used: " + slots_used);
-	        	slots_used = (int)((slots_used / all_slots) * 100);
+	        	slots_used = Math.round(((slots_used / all_slots) * 100));
 	        	
 	        	car_to_slot = evs;
+	    		System.out.println(w1 + ", " + w2);
 			}
 
 			
