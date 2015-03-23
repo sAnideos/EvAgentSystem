@@ -17,8 +17,8 @@ public class Run {
 	public void start()
 	{
 		Model model = new Model();
-		model.createAndRunModel(dt.getCars(), dt.getTime_slots(),
-				dt.getEnergy(), dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy(), 1.0);
+		model.createAndRunModel(dt.getCars(250), dt.getTime_slots(),
+				dt.getEnergy(), dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy(), 1.0, 0.0, 0.0);
 		
 		/*
 		// increases every vehicle parking time by 2

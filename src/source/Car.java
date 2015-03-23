@@ -46,6 +46,11 @@ public class Car {
 		slots_used.add(s);
 	}
 	
+	public void resetSlots()
+	{
+		slots_used = new ArrayList<Integer>();
+	}
+	
 	public ArrayList<Integer> getSlots()
 	{
 		return slots_used;

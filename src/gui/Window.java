@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
@@ -19,6 +20,7 @@ import java.util.Random;
 import java.util.Set;
 
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -41,11 +43,20 @@ import javax.swing.table.TableColumn;
 
 import source.Car;
 import source.DataGenerator;
+import source.GraphManagement;
 import source.Model;
+import source.Stats;
+import source.StatsManagement;
 
 import javax.swing.JTextPane;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
+
+import java.awt.Font;
+
+import javax.swing.JSeparator;
+import javax.swing.JSpinner;
+import javax.swing.JCheckBox;
 
 public class Window {
 
@@ -56,10 +67,85 @@ public class Window {
 	private int evs = 1;
 	private int time_slots = 2;
 	private int chargers = 1;
-	private double w1 = 0.5;
+	private double w1 = 0.35, w2 = 0.35, w3 = 0.30;
 	private ArrayList<Car> car_to_slot;
 	private HashMap<Integer, ArrayList<Integer>> slot_to_car;
 	private int read_file = 0; // 1 - button "File" was pressed, 0 - user input
+	private StatsManagement sm = new StatsManagement();
+	
+	public class MeThread implements Runnable {
+
+		private Stats s;
+		
+	    public void run() {
+
+	    	s = new Stats();
+	    	
+	    	btnCompute.setEnabled(false);
+	    	btnRandom.setEnabled(false);
+	    	btnFile.setEnabled(false);
+	    	btnSaveAs.setEnabled(false);
+	    	moreSlotsSlider.setEnabled(false);
+	    	moreRenSlider.setEnabled(false);
+	    	
+	    	
+	    	
+	    	
+			int start = 15;
+			int rate = 5;
+			while(start <= dt.getCarsNum())
+			{
+		    	  	
+				computeResults(start);
+				setStatsManagement(start);
+
+				
+				if((start + rate) > dt.getCarsNum())
+				{
+					start = dt.getCarsNum();
+					
+					computeResults(start);
+					
+					setStatsManagement(start);
+					
+					break;
+				}
+				else
+				{
+					start += rate;
+				}
+
+			}
+	    	btnCompute.setEnabled(true);
+	    	btnRandom.setEnabled(true);
+	    	btnFile.setEnabled(true);
+	    	btnSaveAs.setEnabled(true);
+	    	moreSlotsSlider.setEnabled(true);
+	    	moreRenSlider.setEnabled(true);
+	    	
+			sm.addStats(s);
+	    	sm.printStats();
+	    }
+
+
+	    public void setStatsManagement(int cars_n)
+	    {
+
+	    	s.addCars_charged(model.getCharged());
+			s.addNon_renewables((double) (model.getNonRenEnergy()));
+			s.addRenewables((double) model.getRenEnergy());
+			s.addRenewables_total((double) model.getRenewable_all_used());
+			s.addSlots(model.getSlots_used());
+			s.addTotal_energy((double) model.getEnergy());
+			s.addCars(cars_n);
+			s.setW1(w1);
+			s.setW2(w2);
+			s.setW3(w3);
+
+	    }
+	}
+	
+	
 	
 	private class ActionHandler implements ActionListener {
 
@@ -82,100 +168,29 @@ public class Window {
 	        	table_model_slot.setRowCount(0);
 				consoleScreen.setText(null);
 				//System.out.println("time_slots: " + time_slots);
-				if(!(read_file == 1))
+				if(!(read_file == 1) && (!fileCheckBox.isSelected()))
 				{
 					dt = new DataGenerator(evs, time_slots, chargers, energy_range);
 					dt.generateCarData();
 					dt.generateEnergyData();
-					dt.generateDiverseEnergy();					
+					dt.generateDiverseEnergy();			
+					fileCheckBox.setEnabled(false);
 				}
 				read_file = 0;
 				//consoleScreen.setText("" + read_file);
-				model = new Model();
-				model.createAndRunModel(dt.getCars(), dt.getTime_slots(),
-						dt.getEnergy(), dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy(), w1);
 				
-				renProgressBar.setValue(model.getRenEnergy());
-				nonRenProgressBar.setValue(model.getNonRenEnergy());
-				energyProgressBar.setValue(model.getEnergy());
-				energyAllProgressBar.setValue(model.getRenewable_all_used());
-				slotProgressBar.setValue(model.getSlots_used());
-				chargedProgressBar.setValue(model.getCharged());
-				
-				car_to_slot = model.getCar_to_slot();
-
-				
-				int counter = 1;
-		    	for(Car c : car_to_slot)
-		    	{
-		    		if(!c.getSlots().isEmpty())
-		    		{
-			    		StringBuilder strb = new StringBuilder();
-			    		for(Integer t: c.getSlots())
-			    		{
-			    			strb.append(t + ", ");
-			    			
-			    			//System.out.println(t);
-			    		}
-			    		String print = strb.toString();
-			    		print = print.substring(0, print.length()-2);
-			    		table_model_car.addRow(new Object[]{counter, print});
-			    		
-		    		}
-		    		counter++;
-		    	}
-		    	
-		    	
-		    	
-		    	
-		    	int rows = table_model_car.getRowCount();
-		    	int max = -1;
-		    	for(int i = 0; i < rows; i++)
-		    	{
-		    		TableCellRenderer cellRenderer = byCarTable.getCellRenderer(i, 1);
-	                Object valueAt = byCarTable.getValueAt(i, 1);
-	                Component tableCellRendererComponent = cellRenderer.getTableCellRendererComponent(byCarTable, valueAt, false, false, i, 1);
-	                int heightPreferable = tableCellRendererComponent.getPreferredSize().width;
-	                max = Math.max(heightPreferable, max);
-	            }
-
-				byCarTable.getColumnModel().getColumn(1).setMaxWidth(max + 25);
-				byCarTable.getColumnModel().getColumn(1).setMinWidth(max + 25);
-				
-				
-				// print slot to car
-				slot_to_car = model.getSlot_to_car();
-				
-				Set<Integer> keyset = slot_to_car.keySet();
-				
-				for(Integer key : keyset)
+				if(multiRunsCheckBox.isSelected())
 				{
-					StringBuilder strb = new StringBuilder();
-					for(Integer t : slot_to_car.get(key))
-					{
-						strb.append((t + 1) + ", ");
-					}
-					String print = strb.toString();
-					print = print.substring(0, print.length()-2);
-					table_model_slot.addRow(new Object[]{key, print});
+            		Thread thread = (new Thread(new MeThread()));
+            		thread.start();
+				}
+				else
+				{
+					//System.out.println(dt.getCars());
+					computeResults(-1);
 				}
 				
-		    	rows = table_model_slot.getRowCount();
-		    	max = -1;
-		    	for(int i = 0; i < rows; i++)
-		    	{
-		    		TableCellRenderer cellRenderer = bySlotTable.getCellRenderer(i, 1);
-	                Object valueAt = bySlotTable.getValueAt(i, 1);
-	                Component tableCellRendererComponent = cellRenderer.getTableCellRendererComponent(bySlotTable, valueAt, false, false, i, 1);
-	                int heightPreferable = tableCellRendererComponent.getPreferredSize().width;
-	                max = Math.max(heightPreferable, max);
-	            }
-
-		    	bySlotTable.getColumnModel().getColumn(1).setMaxWidth(max + 25);
-		    	bySlotTable.getColumnModel().getColumn(1).setMinWidth(max + 25);
 				
-				
-				btnSaveAs.setEnabled(true);
 			}
 			else if(e.getActionCommand().compareTo("save_as") == 0)
 			{
@@ -227,7 +242,6 @@ public class Window {
         	   energySlider.setMaximum(temp);
         	   //System.out.println("energy: " + energy_range);
 
-
         	   temp = r.nextInt(temp) + 1;
         	   energyTextPane.setText("" + temp);
         	   energySlider.setValue(temp);
@@ -249,12 +263,16 @@ public class Window {
 		
 	}
 	
-	private class ChangeHandler implements ChangeListener {
+
+	
+private class ChangeHandler implements ChangeListener {
 		
 //		private JTextPane energyTextPane;
 //		private JTextPane carTextPane;
 //		private JTextPane slotTextPane;
 //		private JTextPane chargerTextPane;
+	
+		
         public void stateChanged(ChangeEvent event)
         {
            // update text field when the slider value changes
@@ -285,19 +303,67 @@ public class Window {
         	   chargerTextPane.setText("" + chargers);
         	   //System.out.println("chargers: " + chargers);
            }
-           else
+           else if(source.getName().equals("ren_w"))
            {
-				w1 = 1.0 - (source.getValue() / 100.0);
+				w2 = (source.getValue() / 100.0);
+				DecimalFormat df = new DecimalFormat("0.00"); 
+				String temp = df.format(w2).replace(",", ".");
+				renWeightPane.setText(temp);
+				w2 = Double.parseDouble(temp);
+				double why = (Math.round((1.0 - w2 - w1) * 100.0)) / 100.0;
+				w3 = why;
+				temp = df.format(w3).replace(",", ".").replace("-", "");
+				
+				chargedWeightPane.setText(temp);
+				moreChargeSlider.setValue((int)(w3 * 100));
+				System.out.println("w1: " + w1 + " w2: " + w2 + " w3: " + w3);
+           }
+           else if(source.getName().equals("slots_w")) // edw to varos tha kataligei panta se 0 h' 5, den kserw an einai kako, emena kalo mou fainetai... dld de tha ginei pote 0.71 px
+           {
+				w1 = (source.getValue() / 100.0);
+				
+				if(source.getValue() % 10 == 5)
+				{
+					int temp;
+					temp = source.getValue() - 5;
+					
+					w2 = ((100 - temp) / 2) / 100.0;
+					w3 = w2 + 0.05;
+				}
+				else
+				{
+					w2 = ((100.0 - source.getValue()) / 2) / 100.0;
+					w3 = w2;
+				}
+				
+				//System.out.println("W2: " + w2 + " W3: " + w3);
+				//w2 = (1.0 - w1) / 2;
+				//System.out.println(w2);
 				DecimalFormat df = new DecimalFormat("0.00"); 
 				String temp = df.format(w1).replace(",", ".");
-				moreSlotsPane.setText(temp);
-				temp = df.format(1.0 - w1).replace(",", ".");
-				moreChargePane.setText(temp);
+				slotsWeightPane.setText(temp);
+				
+				
+				temp = df.format(w2).replace(",", ".");
+				renWeightPane.setText(temp + "");
+				
+				chargedWeightPane.setText(w3  + "");
+				moreChargeSlider.setValue((int)(w3) * 100);
+				
+				
+				double why = (Math.round((1.00 - w1) * 100.0)) / 100.0;
+				moreRenSlider.setMaximum((int)(why * 100.0));
+				moreRenSlider.setValue((int)(w2 * 100.0));
+				moreRenSlider.setMajorTickSpacing(5);
+
+				
+				//System.out.println("The maximum: " + (int)(Double.parseDouble(temp) * 100));
+				
            }
         }
 	}
 	
-
+	
 	private JFrame frmElectricVehicleAgent;
 	private JPanel settingsPanel;
 	private JPanel controlPanel;
@@ -341,12 +407,21 @@ public class Window {
 	private JTextPane consoleScreen;
 	private JButton btnSaveAs;
 	private JButton btnCopyAll;
-	private JSlider weightSlider;
-	private JTextPane moreSlotsPane;
-	private JTextPane moreChargePane;
-	
-
-	
+	private JButton plusBtnEnergy;
+	private JButton plusBtnSlots;
+	private JButton plusBtnChargers;
+	private JButton minusBtnCars;
+	private JButton minusBtnEnergy;
+	private JButton minusBtnSlots;
+	private JButton minusBtnChargers;
+	private JSlider moreSlotsSlider;	
+	private JSlider moreChargeSlider;	
+	private JSlider moreRenSlider;
+	private JTextPane slotsWeightPane;
+	private JTextPane renWeightPane;
+	private JTextPane chargedWeightPane;
+	private JCheckBox multiRunsCheckBox;
+	private JCheckBox fileCheckBox;
 	
 
 	/**
@@ -394,20 +469,18 @@ public class Window {
 	 */
 	@SuppressWarnings("serial")
 	private void initialize() {
-		
-		
-		ChangeHandler change = new ChangeHandler();
 		ActionHandler action = new ActionHandler();
-		
+		ChangeHandler change = new ChangeHandler();
 		
 		frmElectricVehicleAgent = new JFrame();
+		frmElectricVehicleAgent.setResizable(false);
 		frmElectricVehicleAgent.setTitle("Electric Vehicle Agent System");
-		frmElectricVehicleAgent.setBounds(100, 100, 710, 492);
+		frmElectricVehicleAgent.setBounds(100, 100, 756, 611);
 		frmElectricVehicleAgent.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmElectricVehicleAgent.getContentPane().setLayout(null);
 		
 		settingsPanel = new JPanel();
-		settingsPanel.setBounds(10, 11, 250, 442);
+		settingsPanel.setBounds(10, 11, 292, 553);
 		frmElectricVehicleAgent.getContentPane().add(settingsPanel);
 		settingsPanel.setLayout(null);
 		
@@ -473,7 +546,7 @@ public class Window {
 		btnRandom = new JButton("Randomize");
 		btnRandom.setActionCommand("random");
 		btnRandom.addActionListener(action);
-		btnRandom.setBounds(72, 374, 101, 23);
+		btnRandom.setBounds(94, 485, 101, 23);
 		settingsPanel.add(btnRandom);
 		
 		btnFile = new JButton("File");
@@ -489,36 +562,37 @@ public class Window {
 				   dt = new DataGenerator(0,0,0,0);
 				   dt.readFromFile(path);
 				   read_file = 1;
+				   fileCheckBox.setEnabled(true);
 				}
 			}
 		});
-		btnFile.setBounds(10, 408, 101, 23);
+		btnFile.setBounds(10, 519, 101, 23);
 		settingsPanel.add(btnFile);
 		
 		energyTextPane = new JTextPane();
 		energyTextPane.setText("1");
-		energyTextPane.setBounds(183, 83, 34, 20);
+		energyTextPane.setBounds(240, 111, 34, 20);
 		energyTextPane.setBorder(blackline);
 		energyTextPane.setEditable(false);
 		settingsPanel.add(energyTextPane);
 		
 		carTextPane = new JTextPane();
 		carTextPane.setText("1");
-		carTextPane.setBounds(183, 11, 34, 20);
+		carTextPane.setBounds(240, 39, 34, 20);
 		carTextPane.setBorder(blackline);
 		carTextPane.setEditable(false);
 		settingsPanel.add(carTextPane);
 		
 		slotTextPane = new JTextPane();
 		slotTextPane.setText("2");
-		slotTextPane.setBounds(183, 142, 34, 20);
+		slotTextPane.setBounds(240, 170, 34, 20);
 		slotTextPane.setBorder(blackline);
 		slotTextPane.setEditable(false);
 		settingsPanel.add(slotTextPane);
 		
 		chargerTextPane = new JTextPane();
 		chargerTextPane.setText("1");
-		chargerTextPane.setBounds(183, 212, 34, 20);
+		chargerTextPane.setBounds(240, 240, 34, 20);
 		chargerTextPane.setBorder(blackline);
 		chargerTextPane.setEditable(false);
 		settingsPanel.add(chargerTextPane);
@@ -526,54 +600,184 @@ public class Window {
 		btnSaveAs = new JButton("Save As");
 		btnSaveAs.setActionCommand("save_as");
 		btnSaveAs.addActionListener(action);
-		btnSaveAs.setBounds(139, 408, 101, 23);
+		btnSaveAs.setBounds(173, 519, 101, 23);
 		btnSaveAs.setEnabled(false);
 		settingsPanel.add(btnSaveAs);
 		
 		JLabel lblObjectiveFunctionWeight = new JLabel("Objective Function Weight");
 		lblObjectiveFunctionWeight.setHorizontalAlignment(SwingConstants.CENTER);
-		lblObjectiveFunctionWeight.setBounds(33, 288, 184, 14);
+		lblObjectiveFunctionWeight.setBounds(46, 288, 184, 14);
 		settingsPanel.add(lblObjectiveFunctionWeight);
 		
-		weightSlider = new JSlider();
-		weightSlider.setPaintTicks(true);
-		weightSlider.setBounds(54, 340, 142, 23);
-		weightSlider.setName("weight");
-		weightSlider.addChangeListener(change);
-		settingsPanel.add(weightSlider);
+		JButton plusBtnCars = new JButton("+");
+		plusBtnCars.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				carSlider.setValue(carSlider.getValue() + 1);
+			}
+		});
+		plusBtnCars.setMargin(new Insets(0,0,0,0));
+		plusBtnCars.setBounds(183, 36, 24, 23);
+		settingsPanel.add(plusBtnCars);
 		
-		moreSlotsPane = new JTextPane();
-		moreSlotsPane.setText("0.5");
-		moreSlotsPane.setEditable(false);
-		moreSlotsPane.setBorder(blackline);
-		moreSlotsPane.setBounds(10, 340, 34, 20);
-		settingsPanel.add(moreSlotsPane);
+		plusBtnEnergy = new JButton("+");
+		plusBtnEnergy.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				energySlider.setValue(energySlider.getValue() + 1);
+			}
+		});
+		plusBtnEnergy.setMargin(new Insets(0, 0, 0, 0));
+		plusBtnEnergy.setBounds(183, 108, 24, 23);
+		settingsPanel.add(plusBtnEnergy);
 		
-		moreChargePane = new JTextPane();
-		moreChargePane.setText("0.5");
-		moreChargePane.setEditable(false);
-		moreChargePane.setBorder(blackline);
-		moreChargePane.setBounds(206, 340, 34, 20);
-		settingsPanel.add(moreChargePane);
+		plusBtnSlots = new JButton("+");
+		plusBtnSlots.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				slotSlider.setValue(slotSlider.getValue() + 1);
+			}
+		});
+		plusBtnSlots.setMargin(new Insets(0, 0, 0, 0));
+		plusBtnSlots.setBounds(183, 167, 24, 23);
+		settingsPanel.add(plusBtnSlots);
 		
-		JLabel lblUseMoreSlots = new JLabel("Use more Slots");
-		lblUseMoreSlots.setBounds(10, 313, 89, 14);
-		settingsPanel.add(lblUseMoreSlots);
+		plusBtnChargers = new JButton("+");
+		plusBtnChargers.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				chargerSlider.setValue(chargerSlider.getValue() + 1);
+			}
+		});
+		plusBtnChargers.setMargin(new Insets(0, 0, 0, 0));
+		plusBtnChargers.setBounds(183, 237, 24, 23);
+		settingsPanel.add(plusBtnChargers);
 		
-		JLabel lblChargeMoreCars = new JLabel("Charge more Cars");
-		lblChargeMoreCars.setHorizontalAlignment(SwingConstants.RIGHT);
-		lblChargeMoreCars.setBounds(139, 313, 101, 14);
-		settingsPanel.add(lblChargeMoreCars);
+		minusBtnCars = new JButton("-");
+		minusBtnCars.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				carSlider.setValue(carSlider.getValue() - 1);
+			}
+		});
+		minusBtnCars.setMargin(new Insets(0, 0, 0, 0));
+		minusBtnCars.setBounds(206, 36, 24, 23);
+		settingsPanel.add(minusBtnCars);
+		
+		minusBtnEnergy = new JButton("-");
+		minusBtnEnergy.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				energySlider.setValue(energySlider.getValue() - 1);
+			}
+		});
+		minusBtnEnergy.setMargin(new Insets(0, 0, 0, 0));
+		minusBtnEnergy.setBounds(206, 108, 24, 23);
+		settingsPanel.add(minusBtnEnergy);
+		
+		minusBtnSlots = new JButton("-");
+		minusBtnSlots.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				slotSlider.setValue(slotSlider.getValue() - 1);
+				
+			}
+		});
+		minusBtnSlots.setMargin(new Insets(0, 0, 0, 0));
+		minusBtnSlots.setBounds(206, 167, 24, 23);
+		settingsPanel.add(minusBtnSlots);
+		
+		minusBtnChargers = new JButton("-");
+		minusBtnChargers.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				chargerSlider.setValue(chargerSlider.getValue() - 1);
+			}
+		});
+		minusBtnChargers.setMargin(new Insets(0, 0, 0, 0));
+		minusBtnChargers.setBounds(206, 237, 24, 23);
+		settingsPanel.add(minusBtnChargers);
+		
+
+		
+		JLabel lblMoreSlots = new JLabel("More Slots");
+		lblMoreSlots.setBounds(10, 448, 61, 14);
+		settingsPanel.add(lblMoreSlots);
+		
+		JLabel lblMoreCharged = new JLabel("More Charged");
+		lblMoreCharged.setBounds(206, 448, 84, 14);
+		settingsPanel.add(lblMoreCharged);
+		
+		JLabel lblMoreRenewables = new JLabel("More Renewables");
+		lblMoreRenewables.setBounds(94, 448, 89, 14);
+		settingsPanel.add(lblMoreRenewables);
+		
+		
+		slotsWeightPane = new JTextPane();
+		slotsWeightPane.setText("0.35");
+		slotsWeightPane.setEditable(false);
+		slotsWeightPane.setBorder(blackline);
+		slotsWeightPane.setBounds(10, 417, 34, 20);
+		settingsPanel.add(slotsWeightPane);
+		
+		renWeightPane = new JTextPane();
+		renWeightPane.setText("0.35");
+		renWeightPane.setEditable(false);
+		renWeightPane.setBorder(blackline);
+		renWeightPane.setBounds(125, 417, 34, 20);
+		settingsPanel.add(renWeightPane);
+		
+		chargedWeightPane = new JTextPane();
+		chargedWeightPane.setText("0.30");
+		chargedWeightPane.setEditable(false);
+		chargedWeightPane.setBorder(blackline);
+		chargedWeightPane.setBounds(240, 417, 34, 20);
+		settingsPanel.add(chargedWeightPane);
+		
+		moreChargeSlider = new JSlider();
+		moreChargeSlider.setEnabled(false);
+		moreChargeSlider.setValue(30);
+		moreChargeSlider.addChangeListener(change);
+		moreChargeSlider.setName("charged_w");
+		moreChargeSlider.setSnapToTicks(true);
+		moreChargeSlider.setPaintTicks(true);
+		moreChargeSlider.setOrientation(SwingConstants.VERTICAL);
+		moreChargeSlider.setMajorTickSpacing(5);
+		moreChargeSlider.setBounds(240, 314, 34, 96);
+		settingsPanel.add(moreChargeSlider);
+		
+		moreRenSlider = new JSlider();
+		moreRenSlider.setMaximum(35);
+		moreRenSlider.setValue(35);
+		moreRenSlider.setName("ren_w");
+		moreRenSlider.addChangeListener(change);
+		moreRenSlider.setSnapToTicks(true);
+		moreRenSlider.setPaintTicks(true);
+		moreRenSlider.setOrientation(SwingConstants.VERTICAL);
+		moreRenSlider.setMajorTickSpacing(2);
+		moreRenSlider.setBounds(125, 314, 34, 96);
+		settingsPanel.add(moreRenSlider);
+		
+		
+		
+		moreSlotsSlider = new JSlider();
+		moreSlotsSlider.setValue(35);
+		moreSlotsSlider.setName("slots_w");
+		moreSlotsSlider.addChangeListener(change);
+		moreSlotsSlider.setMajorTickSpacing(5);
+		moreSlotsSlider.setSnapToTicks(true);
+		moreSlotsSlider.setPaintTicks(true);
+		moreSlotsSlider.setOrientation(SwingConstants.VERTICAL);
+		moreSlotsSlider.setBounds(10, 314, 34, 96);
+		settingsPanel.add(moreSlotsSlider);
+		
+
+		
+		
+		
+		
 		
 		controlPanel = new JPanel();
-		controlPanel.setBounds(270, 427, 411, 26);
+		controlPanel.setBounds(312, 427, 411, 71);
 		frmElectricVehicleAgent.getContentPane().add(controlPanel);
 		controlPanel.setLayout(null);
 		
 		btnCompute = new JButton("Compute");
 		btnCompute.setActionCommand("compute");
 		btnCompute.addActionListener(action);
-		btnCompute.setBounds(169, 0, 89, 23);
+		btnCompute.setBounds(168, 11, 89, 23);
 		controlPanel.add(btnCompute);
 		
 		btnCopyAll = new JButton("Copy All");
@@ -588,11 +792,29 @@ public class Window {
 				
 			}
 		});
-		btnCopyAll.setBounds(312, 0, 89, 23);
+		btnCopyAll.setBounds(312, 11, 89, 23);
 		controlPanel.add(btnCopyAll);
 		
+		multiRunsCheckBox = new JCheckBox("Multi Runs");
+		multiRunsCheckBox.setBounds(6, 11, 97, 23);
+		controlPanel.add(multiRunsCheckBox);
+		
+		fileCheckBox = new JCheckBox("File");
+		fileCheckBox.setBounds(6, 37, 97, 23);
+		fileCheckBox.setEnabled(false);
+		controlPanel.add(fileCheckBox);
+		
+		JButton btnPlot = new JButton("Plot");
+		btnPlot.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				sm.showGraph();
+			}
+		});
+		btnPlot.setBounds(168, 45, 89, 23);
+		controlPanel.add(btnPlot);
+		
 		statsPanel = new JPanel();
-		statsPanel.setBounds(270, 234, 411, 194);
+		statsPanel.setBounds(312, 225, 411, 194);
 		frmElectricVehicleAgent.getContentPane().add(statsPanel);
 		statsPanel.setLayout(null);
 		
@@ -710,7 +932,7 @@ public class Window {
 		statsPanel.add(button_3);
 		
 		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
-		tabbedPane.setBounds(270, 11, 411, 215);
+		tabbedPane.setBounds(312, 11, 411, 215);
 		frmElectricVehicleAgent.getContentPane().add(tabbedPane);
 		
 		//bySlotPane = new JScrollPane();
@@ -793,5 +1015,97 @@ public class Window {
 		
 		model = new Model();
 		
+	}
+	
+	
+	
+	
+	public void computeResults(int cars_num)
+	{
+		model = new Model();
+		System.out.println("Cars: "+ cars_num);
+		model.createAndRunModel(dt.getCars(cars_num), dt.getTime_slots(),
+				dt.getEnergy(), dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy(), w1, w2, w3);
+		
+		renProgressBar.setValue(model.getRenEnergy());
+		nonRenProgressBar.setValue(model.getNonRenEnergy());
+		energyProgressBar.setValue(model.getEnergy());
+		energyAllProgressBar.setValue(model.getRenewable_all_used());
+		slotProgressBar.setValue(model.getSlots_used());
+		chargedProgressBar.setValue(model.getCharged());
+		
+		car_to_slot = model.getCar_to_slot();
+
+		
+		int counter = 1;
+    	for(Car c : car_to_slot)
+    	{
+    		if(!c.getSlots().isEmpty())
+    		{
+	    		StringBuilder strb = new StringBuilder();
+	    		for(Integer t: c.getSlots())
+	    		{
+	    			strb.append(t + ", ");
+	    			
+	    			//System.out.println(t);
+	    		}
+	    		String print = strb.toString();
+	    		print = print.substring(0, print.length()-2);
+	    		table_model_car.addRow(new Object[]{counter, print});
+	    		
+    		}
+    		counter++;
+    	}
+    	
+    	
+    	
+    	
+    	int rows = table_model_car.getRowCount();
+    	int max = -1;
+    	for(int i = 0; i < rows; i++)
+    	{
+    		TableCellRenderer cellRenderer = byCarTable.getCellRenderer(i, 1);
+            Object valueAt = byCarTable.getValueAt(i, 1);
+            Component tableCellRendererComponent = cellRenderer.getTableCellRendererComponent(byCarTable, valueAt, false, false, i, 1);
+            int heightPreferable = tableCellRendererComponent.getPreferredSize().width;
+            max = Math.max(heightPreferable, max);
+        }
+
+		byCarTable.getColumnModel().getColumn(1).setMaxWidth(max + 25);
+		byCarTable.getColumnModel().getColumn(1).setMinWidth(max + 25);
+		
+		
+		// print slot to car
+		slot_to_car = model.getSlot_to_car();
+		
+		Set<Integer> keyset = slot_to_car.keySet();
+		
+		for(Integer key : keyset)
+		{
+			StringBuilder strb = new StringBuilder();
+			for(Integer t : slot_to_car.get(key))
+			{
+				strb.append((t + 1) + ", ");
+			}
+			String print = strb.toString();
+			print = print.substring(0, print.length()-2);
+			table_model_slot.addRow(new Object[]{key, print});
+		}
+		
+    	rows = table_model_slot.getRowCount();
+    	max = -1;
+    	for(int i = 0; i < rows; i++)
+    	{
+    		TableCellRenderer cellRenderer = bySlotTable.getCellRenderer(i, 1);
+            Object valueAt = bySlotTable.getValueAt(i, 1);
+            Component tableCellRendererComponent = cellRenderer.getTableCellRendererComponent(bySlotTable, valueAt, false, false, i, 1);
+            int heightPreferable = tableCellRendererComponent.getPreferredSize().width;
+            max = Math.max(heightPreferable, max);
+        }
+
+    	bySlotTable.getColumnModel().getColumn(1).setMaxWidth(max + 25);
+    	bySlotTable.getColumnModel().getColumn(1).setMinWidth(max + 25);
+		
+		btnSaveAs.setEnabled(true);
 	}
 }

@@ -148,8 +148,28 @@ public class DataGenerator {
 		cars.get(car).setEndTime(new_end);
 	}
 
-	public ArrayList<Car> getCars() {
-		return cars;
+	public ArrayList<Car> getCars(int count) {
+		
+		if(count == cars.size() || (count == -1))
+		{
+			return cars;
+		}
+		else
+		{
+			ArrayList<Car> temp = new ArrayList<Car>();
+			
+			for(int i = 0; i < count; i++)
+			{
+				temp.add(cars.get(i));
+			}
+			return temp;
+		}
+	}
+	
+	
+	public int getCarsNum()
+	{
+		return cars.size();
 	}
 
 	public int[] getEnergy() {

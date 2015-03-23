@@ -23,11 +23,13 @@ public class Model {
 	private ArrayList car_to_slot;
 	private HashMap<Integer, ArrayList<Integer>> slot_to_car = new HashMap<Integer, ArrayList<Integer>>();
 	
-	public void createAndRunModel(ArrayList<Car> evs, int ct, int[] energy, int chargers, int[] renewable_energy, int[] non_renewable_energy, double w1)
+	public void createAndRunModel(ArrayList<Car> evs, int ct, int[] energy, int chargers, int[] renewable_energy, int[] non_renewable_energy, double w1, double w2, double w3)
 	{
 		
-		double w2 = 1.0 - w1;
+		//double w2 = 1.0 - w1;
 
+		
+		
 		try {
 			 
 			IloCplex cp = new IloCplex(); // create the model
@@ -39,6 +41,7 @@ public class Model {
 			
 			for(int i = 0; i < evs.size(); i++)
 			{
+				evs.get(i).resetSlots(); // reseting slots
 				for(int j = 0; j < ct; j++)
 				{
 					var[i][j] = cp.boolVar("var(" + i + ", " + j + ")"); // creating boolean decision variables and giving them name
@@ -150,7 +153,7 @@ public class Model {
 			
 
 			// ATIKEIMENIKES SYNARTISEIS
-			
+			System.out.println(w1 + ", " + w2 + ", " + w3);
 			
 			// 1)
 			// antikeimeniki synartisi, megistpopoiisi asswn
@@ -176,17 +179,17 @@ public class Model {
 			{
 				for(int en = 0; en < renewable_energy[t]; en++)
 				{
-					p_energy.addTerm(10, ren_energy[t][en]);
+					p_energy.addTerm((10 * w3), ren_energy[t][en]);
 				}
 				for(int en = 0; en < non_renewable_energy[t]; en++)
 				{
-					p_energy.addTerm(1, non_ren_energy[t][en]);
+					p_energy.addTerm((1 * w3), non_ren_energy[t][en]);
 				}
 				
 			}
 			
 			
-			
+			System.out.println(cp.sum(p_charges, p_energy));
 			// megistopoiisi oximnatwn pou fortizoun
 			/*
 			IloLinearNumExpr p_charges = cp.linearNumExpr();
