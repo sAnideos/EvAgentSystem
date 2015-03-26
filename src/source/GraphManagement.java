@@ -2,8 +2,9 @@ package source;
 
 
 
-import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Rectangle;
+import java.awt.Shape;
 import java.util.ArrayList;
 
 import javax.swing.JFrame;
@@ -11,23 +12,30 @@ import javax.swing.JFrame;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.LegendItem;
+import org.jfree.chart.LegendItemCollection;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
-import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
-import org.jfree.ui.ApplicationFrame;
 import org.jfree.ui.RefineryUtilities;
 
+@SuppressWarnings("serial")
 public class GraphManagement extends JFrame{
 
-	public GraphManagement(String title, ArrayList<Stats> s) {
+	public GraphManagement(String title) {
 		super(title);
 		
-		final XYDataset dataset = createDataset(s);
-        final JFreeChart chart = createChart(dataset);
+
+	}
+
+
+	public void showMultiTestGraph(String title, ArrayList<Test> s)
+	{
+		final XYDataset dataset = createDataset(s, title);
+        final JFreeChart chart = createChart(dataset, title);
         final ChartPanel chartPanel = new ChartPanel(chart);
         chartPanel.setPreferredSize(new java.awt.Dimension(500, 270));
         setContentPane(chartPanel);
@@ -38,19 +46,61 @@ public class GraphManagement extends JFrame{
         RefineryUtilities.centerFrameOnScreen(this);
         this.setVisible(true);
 	}
-
-
 	
 	
-	public XYDataset createDataset(ArrayList<Stats> s)
+	public void showSingleTestGraph(String title, Test stats, int actives[])
+	{
+		for(int i = 0; i < actives.length; i++)
+		{
+			XYSeriesCollection dataset = new XYSeriesCollection();
+			if(actives[i] == 1)
+			{
+				XYSeries series = new XYSeries("Energy");
+				for(Double e: stats.getTotal_energy())
+				{
+					//series.add(x, y);
+				}
+			}
+		}
+	}
+	
+	
+	public XYDataset createDataset(ArrayList<Test> s, String title)
 	{
         XYSeriesCollection dataset = new XYSeriesCollection();
 		int counter = 1;
-		for(Stats t: s)
+
+		for(Test t: s)
 		{
-			ArrayList<Integer> c = t.getCars();
-			ArrayList<Double> r = t.getRenewables();
-			XYSeries series = new XYSeries("" + counter);
+			ArrayList<Double> c = t.getCars();
+			ArrayList<Double> r = null;
+			if(title.compareTo("Renewables") == 0)
+			{
+				r = t.getRenewables();
+			}
+			else if(title.compareTo("Energy") == 0)
+			{
+				r = t.getTotal_energy();
+			}
+			else if(title.compareTo("Non Renewables") == 0)
+			{
+				r = t.getNon_renewables();
+			}
+			else if(title.compareTo("Renewables/Total") == 0)
+			{
+				r = t.getRenewables_total();
+			}
+			else if(title.compareTo("Cars Charged") == 0)
+			{
+				r = t.getCars_charged();
+			}
+			else if(title.compareTo("Slots Used") == 0)
+			{
+				r = t.getSlots();
+			}
+			
+				
+			XYSeries series = new XYSeries(t.getName());
 			counter++;
 			for(int i = 0; i < t.getCars().size(); i++)
 			{
@@ -69,13 +119,13 @@ public class GraphManagement extends JFrame{
 		
 	}
 	
-	public JFreeChart createChart(XYDataset dataset)
+	public JFreeChart createChart(XYDataset dataset, String title)
 	{
 			
 		JFreeChart chart = ChartFactory.createXYLineChart(
-	            "Line Chart Demo 6",      // chart title
-	            "X",                      // x axis label
-	            "Y",                      // y axis label
+				title,      // chart title
+	            "Cars",                      // x axis label
+	            "Consumption",                      // y axis label
 	            dataset,                  // data
 	            PlotOrientation.VERTICAL,
 	            true,                     // include legend
@@ -92,7 +142,7 @@ public class GraphManagement extends JFrame{
 
         
         NumberAxis rangeAxis = (NumberAxis) plot.getRangeAxis();
-        rangeAxis.setRange(0, 100);
+        rangeAxis.setRange(0, 110);
         rangeAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
         
 		return chart;

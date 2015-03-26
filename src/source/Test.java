@@ -2,29 +2,30 @@ package source;
 
 import java.util.ArrayList;
 
-public class Stats {
+public class Test {
 
+	private String test_name;
 	private ArrayList<Double> total_energy;
 	private ArrayList<Double> renewables;
 	private ArrayList<Double> non_renewables;
 	private ArrayList<Double> renewables_total;
-	private ArrayList<Integer> cars_charged;
-	private ArrayList<Integer> slots;
-	private ArrayList<Integer> cars;
+	private ArrayList<Double> cars_charged;
+	private ArrayList<Double> slots;
+	private ArrayList<Double> cars;
 	private double w1;
 	private double w2;
 	private double w3;
 	
 	
-	public Stats()
+	public Test()
 	{
 		total_energy = new ArrayList<Double>();
 		renewables = new ArrayList<Double>();
 		non_renewables = new ArrayList<Double>();
 		renewables_total = new ArrayList<Double>();
-		cars_charged = new ArrayList<Integer>();
-		slots = new ArrayList<Integer>();
-		cars = new ArrayList<Integer>();
+		cars_charged = new ArrayList<Double>();
+		slots = new ArrayList<Double>();
+		cars = new ArrayList<Double>();
 	}
 	
 	public ArrayList<Double> getTotal_energy() {
@@ -51,16 +52,16 @@ public class Stats {
 	public void addRenewables_total(Double e) {
 		renewables_total.add(e);
 	}
-	public ArrayList<Integer> getCars_charged() {
+	public ArrayList<Double> getCars_charged() {
 		return cars_charged;
 	}
-	public void addCars_charged(Integer e) {
+	public void addCars_charged(Double e) {
 		cars_charged.add(e);
 	}
-	public ArrayList<Integer> getSlots() {
+	public ArrayList<Double> getSlots() {
 		return slots;
 	}
-	public void addSlots(Integer e) {
+	public void addSlots(Double e) {
 		slots.add(e);
 	}
 	public double getW1() {
@@ -82,15 +83,23 @@ public class Stats {
 		this.w3 = w3;
 	}
 
-	public ArrayList<Integer> getCars() {
+	public ArrayList<Double> getCars() {
 		return cars;
 	}
 
-	public void addCars(Integer e) {
+	public void addCars(Double e) {
 		cars.add(e);
 	}
 	
+	public void setTestName(String name)
+	{
+		this.test_name = name;
+	}
 	
+	public String getName()
+	{
+		return test_name;
+	}
 
 	
 	

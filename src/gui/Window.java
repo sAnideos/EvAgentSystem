@@ -2,12 +2,8 @@ package gui;
 
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Insets;
-import java.awt.Toolkit;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -20,7 +16,8 @@ import java.util.Random;
 import java.util.Set;
 
 import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
+import javax.swing.DefaultListModel;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -31,32 +28,36 @@ import javax.swing.JButton;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JProgressBar;
-import javax.swing.ScrollPaneConstants;
+import javax.swing.ListModel;
+import javax.swing.MenuSelectionManager;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.border.Border;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.plaf.ComponentUI;
+import javax.swing.plaf.basic.BasicCheckBoxMenuItemUI;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableColumn;
 
 import source.Car;
 import source.DataGenerator;
-import source.GraphManagement;
 import source.Model;
-import source.Stats;
+import source.Test;
 import source.StatsManagement;
 
 import javax.swing.JTextPane;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
-
-import java.awt.Font;
-
-import javax.swing.JSeparator;
-import javax.swing.JSpinner;
 import javax.swing.JCheckBox;
+import javax.swing.JMenuBar;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
+import javax.swing.JList;
+import javax.swing.border.BevelBorder;
+import javax.swing.JTextField;
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JSpinner;
 
 public class Window {
 
@@ -72,27 +73,38 @@ public class Window {
 	private HashMap<Integer, ArrayList<Integer>> slot_to_car;
 	private int read_file = 0; // 1 - button "File" was pressed, 0 - user input
 	private StatsManagement sm = new StatsManagement();
+	private Test s;
+	
+	
+	public static class StayOpenCheckBoxMenuItemUI extends BasicCheckBoxMenuItemUI {
+
+		   protected void doClick(MenuSelectionManager msm) {
+		      menuItem.doClick(0);
+		   }
+
+		   public static ComponentUI createUI(JComponent c) {
+		      return new StayOpenCheckBoxMenuItemUI();
+		   }
+		}
 	
 	public class MeThread implements Runnable {
 
-		private Stats s;
+		
 		
 	    public void run() {
 
-	    	s = new Stats();
+	    	s = new Test();
 	    	
 	    	btnCompute.setEnabled(false);
 	    	btnRandom.setEnabled(false);
-	    	btnFile.setEnabled(false);
-	    	btnSaveAs.setEnabled(false);
+	    	mntmOpen.setEnabled(false);
 	    	moreSlotsSlider.setEnabled(false);
 	    	moreRenSlider.setEnabled(false);
+	    	btnAddTest.setEnabled(false);
 	    	
 	    	
-	    	
-	    	
-			int start = 15;
-			int rate = 5;
+			int start = (int) startSpinner.getValue();
+			int rate = (int) rateSpinner.getValue();
 			while(start <= dt.getCarsNum())
 			{
 		    	  	
@@ -100,7 +112,7 @@ public class Window {
 				setStatsManagement(start);
 
 				
-				if((start + rate) > dt.getCarsNum())
+				if((start + rate) >= dt.getCarsNum())
 				{
 					start = dt.getCarsNum();
 					
@@ -118,17 +130,16 @@ public class Window {
 			}
 	    	btnCompute.setEnabled(true);
 	    	btnRandom.setEnabled(true);
-	    	btnFile.setEnabled(true);
-	    	btnSaveAs.setEnabled(true);
+	    	mntmOpen.setEnabled(true);
 	    	moreSlotsSlider.setEnabled(true);
 	    	moreRenSlider.setEnabled(true);
+	    	btnAddTest.setEnabled(true);
 	    	
-			sm.addStats(s);
-	    	sm.printStats();
+	    
 	    }
 
 
-	    public void setStatsManagement(int cars_n)
+	    public void setStatsManagement(double cars_n)
 	    {
 
 	    	s.addCars_charged(model.getCharged());
@@ -224,11 +235,25 @@ public class Window {
 					   
 					}
 					energyAllProgressBar.setBackground(Color.RED);
-					btnSaveAs.setEnabled(false);
 				}
 				else
 				{
 					consoleScreen.setText("Compute the solution first!");
+				}
+			}
+			else if(e.getActionCommand().compareTo("open") == 0)
+			{
+				JFileChooser chooser = new JFileChooser();
+				chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+				int option = chooser.showOpenDialog(frmElectricVehicleAgent); // parentComponent must a component like JFrame, JDialog...
+				if (option == JFileChooser.APPROVE_OPTION) {
+				   File selectedFile = chooser.getSelectedFile();
+				   String path = selectedFile.getAbsolutePath();
+				  // System.out.println(path.toString());
+				   dt = new DataGenerator(0,0,0,0);
+				   dt.readFromFile(path);
+				   read_file = 1;
+				   fileCheckBox.setEnabled(true);
 				}
 			}
 			else if(e.getActionCommand().compareTo("random") == 0)
@@ -258,7 +283,78 @@ public class Window {
         	   //System.out.println("chargers: " + chargers);
 
 			}
-			
+			else if(e.getActionCommand().compareTo("add_test") == 0)
+			{
+				String temp = testNameTextField.getText();
+				
+				if(!temp.equals(""))
+				{
+					
+					DefaultListModel<String> model2 = (DefaultListModel<String>) listModel;
+					if(!model2.contains(temp))
+					{
+						listModel.addElement(temp);
+						s.setTestName(temp);
+						sm.addStats(s);
+				    	sm.printStats();
+					}
+					else
+					{
+						consoleScreen.setText(null);
+						consoleScreen.setText("Use a different name!");
+					}
+					
+				}
+			}
+			else if(e.getActionCommand().compareTo("remove_test") == 0)
+			{
+				System.out.println(testsList.getSelectedIndex());
+				listModel.remove(testsList.getSelectedIndex());			
+				String name = testsList.getSelectedValue();
+				sm.removeTest(name);
+			}
+			else if(e.getActionCommand().compareTo("multi_checked") == 0)
+			{
+				if(multiRunsCheckBox.isSelected())
+				{
+					startSpinner.setVisible(true);
+					rateSpinner.setVisible(true);
+					lblStart.setVisible(true);
+					lblRate.setVisible(true);
+				}
+				else
+				{
+					startSpinner.setVisible(false);
+					rateSpinner.setVisible(false);
+					lblStart.setVisible(false);
+					lblRate.setVisible(false);
+				}
+			}
+			else if(e.getActionCommand().compareTo("plot_ren") == 0)
+			{
+				sm.showGraph("Renewables");
+			}
+			else if(e.getActionCommand().compareTo("energy_plot") == 0)
+			{
+				sm.showGraph("Energy");
+			}
+			else if(e.getActionCommand().compareTo("plot_non_ren") == 0)
+			{
+				sm.showGraph("Non Renewables");
+			}
+			else if(e.getActionCommand().compareTo("plot_ren_total") == 0)
+			{
+				sm.showGraph("Renewables/Total");
+			}
+			else if(e.getActionCommand().compareTo("plot_charged") == 0)
+			{
+				sm.showGraph("Cars Charged");
+			}
+			else if(e.getActionCommand().compareTo("plot_slots_used") == 0)
+			{
+				sm.showGraph("Slots Used");
+			}
+
 		}
 		
 	}
@@ -376,7 +472,6 @@ private class ChangeHandler implements ChangeListener {
 	private JLabel lblChargers;
 	private JButton btnRandom;
 	private JSlider chargerSlider;
-	private JButton btnFile;
 	private JButton btnCompute;
 	private JPanel statsPanel;
 	private JLabel lblEnergyUsed;
@@ -405,8 +500,6 @@ private class ChangeHandler implements ChangeListener {
 	private JProgressBar energyAllProgressBar;	
 	private JScrollPane scrollPane;
 	private JTextPane consoleScreen;
-	private JButton btnSaveAs;
-	private JButton btnCopyAll;
 	private JButton plusBtnEnergy;
 	private JButton plusBtnSlots;
 	private JButton plusBtnChargers;
@@ -422,6 +515,39 @@ private class ChangeHandler implements ChangeListener {
 	private JTextPane chargedWeightPane;
 	private JCheckBox multiRunsCheckBox;
 	private JCheckBox fileCheckBox;
+	private JMenuBar menuBar;	
+	private JMenu fileMenu;	
+	private JMenuItem mntmOpen;	
+	private JMenuItem mntmSaveAs;	
+	private JMenu plotMenu;
+	private JButton btnAddTest;
+	private JScrollPane testListPane;
+	private JList<String> testsList;
+	private JTextField testNameTextField;
+	private DefaultListModel<String> listModel;
+	private JButton btnRemoveTest;
+	private JMenuItem mntmEnergyUsed;
+	private JMenuItem mntmRenewablesUsed;
+	private JMenuItem mntmNonRenewablesUsed;
+	private JMenuItem mntmRenewablestotalUsed;
+	private JMenuItem mntmCarsCharged;
+	private JMenuItem mntmSlotsUsed;
+	private JMenu mnPlotMultiTests;
+	private JMenu mnPlotSingleTest;
+	private JCheckBoxMenuItem nonRenPlotCheck;
+	private JCheckBoxMenuItem energyPlotCheck;
+	private JCheckBoxMenuItem energyTotalPlotCheck;
+	private JCheckBoxMenuItem chargedPlotCheck;
+	private JCheckBoxMenuItem slotsPlotCheck;
+	private JMenuItem mntmPlot;
+	private JCheckBoxMenuItem renewablesPlotCheck;
+	private JSpinner startSpinner = new JSpinner();
+	private JSpinner rateSpinner;
+	private JLabel lblStart;
+	private JLabel lblRate;
+	
+	
+	
 	
 
 	/**
@@ -475,17 +601,17 @@ private class ChangeHandler implements ChangeListener {
 		frmElectricVehicleAgent = new JFrame();
 		frmElectricVehicleAgent.setResizable(false);
 		frmElectricVehicleAgent.setTitle("Electric Vehicle Agent System");
-		frmElectricVehicleAgent.setBounds(100, 100, 756, 611);
+		frmElectricVehicleAgent.setBounds(100, 100, 756, 617);
 		frmElectricVehicleAgent.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmElectricVehicleAgent.getContentPane().setLayout(null);
 		
 		settingsPanel = new JPanel();
-		settingsPanel.setBounds(10, 11, 292, 553);
+		settingsPanel.setBounds(10, 31, 292, 545);
 		frmElectricVehicleAgent.getContentPane().add(settingsPanel);
 		settingsPanel.setLayout(null);
 		
 		lblEnergy = new JLabel("Energy Range");
-		lblEnergy.setBounds(10, 83, 89, 14);
+		lblEnergy.setBounds(10, 70, 89, 14);
 		settingsPanel.add(lblEnergy);
 		
 		energySlider = new JSlider();
@@ -494,7 +620,7 @@ private class ChangeHandler implements ChangeListener {
 		energySlider.setPaintTicks(true);
 		energySlider.setMinimum(1);
 		energySlider.setValue(1);
-		energySlider.setBounds(10, 108, 163, 23);
+		energySlider.setBounds(10, 95, 163, 23);
 		energySlider.setName("energy");
 		energySlider.addChangeListener(change);
 		settingsPanel.add(energySlider);
@@ -515,7 +641,7 @@ private class ChangeHandler implements ChangeListener {
 		settingsPanel.add(carSlider);
 		
 		lblTimeSlots = new JLabel("Time Slots");
-		lblTimeSlots.setBounds(10, 142, 71, 14);
+		lblTimeSlots.setBounds(10, 129, 71, 14);
 		settingsPanel.add(lblTimeSlots);
 		
 		slotSlider = new JSlider();
@@ -524,13 +650,13 @@ private class ChangeHandler implements ChangeListener {
 		slotSlider.setPaintTicks(true);
 		slotSlider.setValue(2);
 		slotSlider.setMinimum(2);
-		slotSlider.setBounds(10, 167, 163, 23);
+		slotSlider.setBounds(10, 154, 163, 23);
 		slotSlider.setName("slot");
 		slotSlider.addChangeListener(change);
 		settingsPanel.add(slotSlider);
 		
 		lblChargers = new JLabel("Chargers");
-		lblChargers.setBounds(10, 212, 61, 14);
+		lblChargers.setBounds(10, 188, 61, 14);
 		settingsPanel.add(lblChargers);
 		
 		chargerSlider = new JSlider();
@@ -538,7 +664,7 @@ private class ChangeHandler implements ChangeListener {
 		chargerSlider.setValue(1);
 		chargerSlider.setMinimum(1);
 		chargerSlider.setPaintTicks(true);
-		chargerSlider.setBounds(10, 237, 163, 23);
+		chargerSlider.setBounds(10, 213, 163, 23);
 		chargerSlider.setName("charger");
 		chargerSlider.addChangeListener(change);
 		settingsPanel.add(chargerSlider);
@@ -546,32 +672,12 @@ private class ChangeHandler implements ChangeListener {
 		btnRandom = new JButton("Randomize");
 		btnRandom.setActionCommand("random");
 		btnRandom.addActionListener(action);
-		btnRandom.setBounds(94, 485, 101, 23);
+		btnRandom.setBounds(94, 270, 101, 23);
 		settingsPanel.add(btnRandom);
-		
-		btnFile = new JButton("File");
-		btnFile.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				JFileChooser chooser = new JFileChooser();
-				chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-				int option = chooser.showOpenDialog(frmElectricVehicleAgent); // parentComponent must a component like JFrame, JDialog...
-				if (option == JFileChooser.APPROVE_OPTION) {
-				   File selectedFile = chooser.getSelectedFile();
-				   String path = selectedFile.getAbsolutePath();
-				  // System.out.println(path.toString());
-				   dt = new DataGenerator(0,0,0,0);
-				   dt.readFromFile(path);
-				   read_file = 1;
-				   fileCheckBox.setEnabled(true);
-				}
-			}
-		});
-		btnFile.setBounds(10, 519, 101, 23);
-		settingsPanel.add(btnFile);
 		
 		energyTextPane = new JTextPane();
 		energyTextPane.setText("1");
-		energyTextPane.setBounds(240, 111, 34, 20);
+		energyTextPane.setBounds(240, 98, 34, 20);
 		energyTextPane.setBorder(blackline);
 		energyTextPane.setEditable(false);
 		settingsPanel.add(energyTextPane);
@@ -585,28 +691,22 @@ private class ChangeHandler implements ChangeListener {
 		
 		slotTextPane = new JTextPane();
 		slotTextPane.setText("2");
-		slotTextPane.setBounds(240, 170, 34, 20);
+		slotTextPane.setBounds(240, 157, 34, 20);
 		slotTextPane.setBorder(blackline);
 		slotTextPane.setEditable(false);
 		settingsPanel.add(slotTextPane);
 		
 		chargerTextPane = new JTextPane();
 		chargerTextPane.setText("1");
-		chargerTextPane.setBounds(240, 240, 34, 20);
+		chargerTextPane.setBounds(240, 216, 34, 20);
 		chargerTextPane.setBorder(blackline);
 		chargerTextPane.setEditable(false);
 		settingsPanel.add(chargerTextPane);
 		
-		btnSaveAs = new JButton("Save As");
-		btnSaveAs.setActionCommand("save_as");
-		btnSaveAs.addActionListener(action);
-		btnSaveAs.setBounds(173, 519, 101, 23);
-		btnSaveAs.setEnabled(false);
-		settingsPanel.add(btnSaveAs);
 		
 		JLabel lblObjectiveFunctionWeight = new JLabel("Objective Function Weight");
 		lblObjectiveFunctionWeight.setHorizontalAlignment(SwingConstants.CENTER);
-		lblObjectiveFunctionWeight.setBounds(46, 288, 184, 14);
+		lblObjectiveFunctionWeight.setBounds(46, 335, 184, 14);
 		settingsPanel.add(lblObjectiveFunctionWeight);
 		
 		JButton plusBtnCars = new JButton("+");
@@ -616,7 +716,7 @@ private class ChangeHandler implements ChangeListener {
 			}
 		});
 		plusBtnCars.setMargin(new Insets(0,0,0,0));
-		plusBtnCars.setBounds(183, 36, 24, 23);
+		plusBtnCars.setBounds(206, 36, 24, 23);
 		settingsPanel.add(plusBtnCars);
 		
 		plusBtnEnergy = new JButton("+");
@@ -626,7 +726,7 @@ private class ChangeHandler implements ChangeListener {
 			}
 		});
 		plusBtnEnergy.setMargin(new Insets(0, 0, 0, 0));
-		plusBtnEnergy.setBounds(183, 108, 24, 23);
+		plusBtnEnergy.setBounds(206, 95, 24, 23);
 		settingsPanel.add(plusBtnEnergy);
 		
 		plusBtnSlots = new JButton("+");
@@ -636,7 +736,7 @@ private class ChangeHandler implements ChangeListener {
 			}
 		});
 		plusBtnSlots.setMargin(new Insets(0, 0, 0, 0));
-		plusBtnSlots.setBounds(183, 167, 24, 23);
+		plusBtnSlots.setBounds(206, 154, 24, 23);
 		settingsPanel.add(plusBtnSlots);
 		
 		plusBtnChargers = new JButton("+");
@@ -646,7 +746,7 @@ private class ChangeHandler implements ChangeListener {
 			}
 		});
 		plusBtnChargers.setMargin(new Insets(0, 0, 0, 0));
-		plusBtnChargers.setBounds(183, 237, 24, 23);
+		plusBtnChargers.setBounds(206, 213, 24, 23);
 		settingsPanel.add(plusBtnChargers);
 		
 		minusBtnCars = new JButton("-");
@@ -656,7 +756,7 @@ private class ChangeHandler implements ChangeListener {
 			}
 		});
 		minusBtnCars.setMargin(new Insets(0, 0, 0, 0));
-		minusBtnCars.setBounds(206, 36, 24, 23);
+		minusBtnCars.setBounds(183, 36, 24, 23);
 		settingsPanel.add(minusBtnCars);
 		
 		minusBtnEnergy = new JButton("-");
@@ -666,7 +766,7 @@ private class ChangeHandler implements ChangeListener {
 			}
 		});
 		minusBtnEnergy.setMargin(new Insets(0, 0, 0, 0));
-		minusBtnEnergy.setBounds(206, 108, 24, 23);
+		minusBtnEnergy.setBounds(183, 95, 24, 23);
 		settingsPanel.add(minusBtnEnergy);
 		
 		minusBtnSlots = new JButton("-");
@@ -677,7 +777,7 @@ private class ChangeHandler implements ChangeListener {
 			}
 		});
 		minusBtnSlots.setMargin(new Insets(0, 0, 0, 0));
-		minusBtnSlots.setBounds(206, 167, 24, 23);
+		minusBtnSlots.setBounds(183, 154, 24, 23);
 		settingsPanel.add(minusBtnSlots);
 		
 		minusBtnChargers = new JButton("-");
@@ -687,21 +787,21 @@ private class ChangeHandler implements ChangeListener {
 			}
 		});
 		minusBtnChargers.setMargin(new Insets(0, 0, 0, 0));
-		minusBtnChargers.setBounds(206, 237, 24, 23);
+		minusBtnChargers.setBounds(183, 213, 24, 23);
 		settingsPanel.add(minusBtnChargers);
 		
 
 		
 		JLabel lblMoreSlots = new JLabel("More Slots");
-		lblMoreSlots.setBounds(10, 448, 61, 14);
+		lblMoreSlots.setBounds(10, 498, 61, 14);
 		settingsPanel.add(lblMoreSlots);
 		
 		JLabel lblMoreCharged = new JLabel("More Charged");
-		lblMoreCharged.setBounds(206, 448, 84, 14);
+		lblMoreCharged.setBounds(206, 498, 84, 14);
 		settingsPanel.add(lblMoreCharged);
 		
 		JLabel lblMoreRenewables = new JLabel("More Renewables");
-		lblMoreRenewables.setBounds(94, 448, 89, 14);
+		lblMoreRenewables.setBounds(94, 498, 89, 14);
 		settingsPanel.add(lblMoreRenewables);
 		
 		
@@ -709,21 +809,21 @@ private class ChangeHandler implements ChangeListener {
 		slotsWeightPane.setText("0.35");
 		slotsWeightPane.setEditable(false);
 		slotsWeightPane.setBorder(blackline);
-		slotsWeightPane.setBounds(10, 417, 34, 20);
+		slotsWeightPane.setBounds(10, 467, 34, 20);
 		settingsPanel.add(slotsWeightPane);
 		
 		renWeightPane = new JTextPane();
 		renWeightPane.setText("0.35");
 		renWeightPane.setEditable(false);
 		renWeightPane.setBorder(blackline);
-		renWeightPane.setBounds(125, 417, 34, 20);
+		renWeightPane.setBounds(125, 467, 34, 20);
 		settingsPanel.add(renWeightPane);
 		
 		chargedWeightPane = new JTextPane();
 		chargedWeightPane.setText("0.30");
 		chargedWeightPane.setEditable(false);
 		chargedWeightPane.setBorder(blackline);
-		chargedWeightPane.setBounds(240, 417, 34, 20);
+		chargedWeightPane.setBounds(240, 467, 34, 20);
 		settingsPanel.add(chargedWeightPane);
 		
 		moreChargeSlider = new JSlider();
@@ -735,7 +835,7 @@ private class ChangeHandler implements ChangeListener {
 		moreChargeSlider.setPaintTicks(true);
 		moreChargeSlider.setOrientation(SwingConstants.VERTICAL);
 		moreChargeSlider.setMajorTickSpacing(5);
-		moreChargeSlider.setBounds(240, 314, 34, 96);
+		moreChargeSlider.setBounds(240, 360, 34, 96);
 		settingsPanel.add(moreChargeSlider);
 		
 		moreRenSlider = new JSlider();
@@ -747,7 +847,7 @@ private class ChangeHandler implements ChangeListener {
 		moreRenSlider.setPaintTicks(true);
 		moreRenSlider.setOrientation(SwingConstants.VERTICAL);
 		moreRenSlider.setMajorTickSpacing(2);
-		moreRenSlider.setBounds(125, 314, 34, 96);
+		moreRenSlider.setBounds(125, 360, 34, 96);
 		settingsPanel.add(moreRenSlider);
 		
 		
@@ -760,7 +860,7 @@ private class ChangeHandler implements ChangeListener {
 		moreSlotsSlider.setSnapToTicks(true);
 		moreSlotsSlider.setPaintTicks(true);
 		moreSlotsSlider.setOrientation(SwingConstants.VERTICAL);
-		moreSlotsSlider.setBounds(10, 314, 34, 96);
+		moreSlotsSlider.setBounds(10, 360, 34, 96);
 		settingsPanel.add(moreSlotsSlider);
 		
 
@@ -770,51 +870,79 @@ private class ChangeHandler implements ChangeListener {
 		
 		
 		controlPanel = new JPanel();
-		controlPanel.setBounds(312, 427, 411, 71);
+		controlPanel.setBounds(312, 462, 411, 114);
 		frmElectricVehicleAgent.getContentPane().add(controlPanel);
 		controlPanel.setLayout(null);
 		
-		btnCompute = new JButton("Compute");
-		btnCompute.setActionCommand("compute");
-		btnCompute.addActionListener(action);
-		btnCompute.setBounds(168, 11, 89, 23);
-		controlPanel.add(btnCompute);
-		
-		btnCopyAll = new JButton("Copy All");
-		btnCopyAll.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				
-				String myString = (energyProgressBar.getString() + " " + energyAllProgressBar.getString() + ""
-						+ " " + chargedProgressBar.getString()).replaceAll("%", "");
-				StringSelection stringSelection = new StringSelection (myString);
-				Clipboard clpbrd = Toolkit.getDefaultToolkit ().getSystemClipboard ();
-				clpbrd.setContents (stringSelection, null);
-				
-			}
-		});
-		btnCopyAll.setBounds(312, 11, 89, 23);
-		controlPanel.add(btnCopyAll);
-		
 		multiRunsCheckBox = new JCheckBox("Multi Runs");
-		multiRunsCheckBox.setBounds(6, 11, 97, 23);
+		multiRunsCheckBox.setBounds(6, 11, 89, 23);
+		multiRunsCheckBox.addActionListener(action);
+		multiRunsCheckBox.setActionCommand("multi_checked");
 		controlPanel.add(multiRunsCheckBox);
 		
 		fileCheckBox = new JCheckBox("File");
-		fileCheckBox.setBounds(6, 37, 97, 23);
+		fileCheckBox.setBounds(6, 37, 46, 23);
 		fileCheckBox.setEnabled(false);
 		controlPanel.add(fileCheckBox);
 		
-		JButton btnPlot = new JButton("Plot");
-		btnPlot.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				sm.showGraph();
-			}
-		});
-		btnPlot.setBounds(168, 45, 89, 23);
-		controlPanel.add(btnPlot);
+
+		
+		testListPane = new JScrollPane();
+		testListPane.setBounds(312, 11, 89, 73);
+		controlPanel.add(testListPane);
+		listModel = new DefaultListModel<String>();
+		testsList = new JList<String>(listModel);
+		testListPane.setViewportView(testsList);
+		
+		testsList.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
+		
+		btnAddTest = new JButton("Add Test");
+		btnAddTest.setEnabled(false);
+		btnAddTest.addActionListener(action);
+		btnAddTest.setActionCommand("add_test");
+		btnAddTest.setBounds(213, 11, 89, 23);
+		controlPanel.add(btnAddTest);
+		
+		testNameTextField = new JTextField();
+		testNameTextField.setBounds(213, 64, 89, 20);
+		controlPanel.add(testNameTextField);
+		testNameTextField.setColumns(10);
+		
+		btnRemoveTest = new JButton("Remove Test");
+		btnRemoveTest.addActionListener(action);
+		btnRemoveTest.setActionCommand("remove_test");
+		btnRemoveTest.setBounds(213, 37, 89, 23);
+		btnRemoveTest.setMargin(new Insets(0,0,0,0));
+		controlPanel.add(btnRemoveTest);
+		
+		btnCompute = new JButton("Compute");
+		btnCompute.setBounds(10, 80, 89, 23);
+		controlPanel.add(btnCompute);
+		btnCompute.setActionCommand("compute");
+		
+		startSpinner = new JSpinner();
+		startSpinner.setBounds(100, 12, 44, 20);
+		startSpinner.setVisible(false);
+		controlPanel.add(startSpinner);
+		
+		rateSpinner = new JSpinner();
+		rateSpinner.setBounds(159, 12, 44, 20);
+		rateSpinner.setVisible(false);
+		controlPanel.add(rateSpinner);
+		
+		lblStart = new JLabel("Start");
+		lblStart.setBounds(100, 41, 29, 14);
+		lblStart.setVisible(false);
+		controlPanel.add(lblStart);
+		
+		lblRate = new JLabel("Rate");
+		lblRate.setBounds(159, 41, 29, 14);
+		lblRate.setVisible(false);
+		controlPanel.add(lblRate);
+		btnCompute.addActionListener(action);
 		
 		statsPanel = new JPanel();
-		statsPanel.setBounds(312, 225, 411, 194);
+		statsPanel.setBounds(312, 257, 411, 194);
 		frmElectricVehicleAgent.getContentPane().add(statsPanel);
 		statsPanel.setLayout(null);
 		
@@ -890,49 +1018,8 @@ private class ChangeHandler implements ChangeListener {
 		consoleScreen = new JTextPane();
 		scrollPane.setViewportView(consoleScreen);
 		
-		JButton btnCopy = new JButton("copy");
-		btnCopy.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				
-				String myString = energyProgressBar.getString().replace("%", "");
-				StringSelection stringSelection = new StringSelection (myString);
-				Clipboard clpbrd = Toolkit.getDefaultToolkit ().getSystemClipboard ();
-				clpbrd.setContents (stringSelection, null);
-				
-			}
-		});
-		btnCopy.setBounds(190, 7, 55, 23);
-		statsPanel.add(btnCopy);
-		
-		JButton button_2 = new JButton("copy");
-		button_2.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				
-				String myString = energyAllProgressBar.getString().replace("%", "");
-				StringSelection stringSelection = new StringSelection (myString);
-				Clipboard clpbrd = Toolkit.getDefaultToolkit ().getSystemClipboard ();
-				clpbrd.setContents (stringSelection, null);
-				
-			}
-		});
-		button_2.setBounds(190, 82, 55, 23);
-		statsPanel.add(button_2);
-		
-		JButton button_3 = new JButton("copy");
-		button_3.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				String myString = chargedProgressBar.getString().replace("%", "");
-				StringSelection stringSelection = new StringSelection (myString);
-				Clipboard clpbrd = Toolkit.getDefaultToolkit ().getSystemClipboard ();
-				clpbrd.setContents (stringSelection, null);
-				
-			}
-		});
-		button_3.setBounds(190, 107, 55, 23);
-		statsPanel.add(button_3);
-		
 		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
-		tabbedPane.setBounds(312, 11, 411, 215);
+		tabbedPane.setBounds(312, 31, 411, 215);
 		frmElectricVehicleAgent.getContentPane().add(tabbedPane);
 		
 		//bySlotPane = new JScrollPane();
@@ -1011,6 +1098,101 @@ private class ChangeHandler implements ChangeListener {
 		bySlotPane = new JScrollPane(bySlotTable, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		bySlotPane.setVerticalScrollBar(bySlotPane.createVerticalScrollBar());
 		tabbedPane.addTab("By Slot", null, bySlotPane, null);
+		
+		menuBar = new JMenuBar();
+		menuBar.setBounds(0, 0, 750, 20);
+		frmElectricVehicleAgent.getContentPane().add(menuBar);
+		
+		fileMenu = new JMenu("File");
+		menuBar.add(fileMenu);
+		
+		mntmOpen = new JMenuItem("Open");
+		mntmOpen.addActionListener(action);
+		mntmOpen.setActionCommand("open");
+		fileMenu.add(mntmOpen);
+		
+		mntmSaveAs = new JMenuItem("Save As");
+		mntmSaveAs.addActionListener(action);
+		mntmSaveAs.setActionCommand("save_as");
+		mntmSaveAs.setEnabled(false);
+		fileMenu.add(mntmSaveAs);
+		
+		plotMenu = new JMenu("Plot");
+		menuBar.add(plotMenu);
+		
+		mnPlotMultiTests = new JMenu("Plot Multi Tests");
+		plotMenu.add(mnPlotMultiTests);
+		
+		mntmEnergyUsed = new JMenuItem("Energy Used");
+		mnPlotMultiTests.add(mntmEnergyUsed);
+		mntmEnergyUsed.addActionListener(action);
+		mntmEnergyUsed.setActionCommand("energy_plot");
+		
+		mntmRenewablesUsed = new JMenuItem("Renewables Used");
+		mnPlotMultiTests.add(mntmRenewablesUsed);
+		mntmRenewablesUsed.setActionCommand("plot_ren");
+		
+		mntmNonRenewablesUsed = new JMenuItem("Non Renewables Used");
+		mnPlotMultiTests.add(mntmNonRenewablesUsed);
+		mntmNonRenewablesUsed.setActionCommand("plot_non_ren");
+		
+		mntmRenewablestotalUsed = new JMenuItem("Renewables/Total Used");
+		mnPlotMultiTests.add(mntmRenewablestotalUsed);
+		mntmRenewablestotalUsed.setActionCommand("plot_ren_total");
+		
+		mntmCarsCharged = new JMenuItem("Cars Charged");
+		mnPlotMultiTests.add(mntmCarsCharged);
+		mntmCarsCharged.addActionListener(action);
+		mntmCarsCharged.setActionCommand("plot_charged");
+		
+		mntmSlotsUsed = new JMenuItem("Slots Used");
+		mnPlotMultiTests.add(mntmSlotsUsed);
+		mntmSlotsUsed.setActionCommand("plot_slots_used");
+		
+		mnPlotSingleTest = new JMenu("Plot Single Test");
+		plotMenu.add(mnPlotSingleTest);
+		
+		JMenu mnMultiRuns = new JMenu("Multi Runs");
+		mnPlotSingleTest.add(mnMultiRuns);
+		
+		JMenuItem mntmChooseStats = new JMenuItem("Choose Stats");
+		mnMultiRuns.add(mntmChooseStats);
+		
+		JMenu mnSingleRun = new JMenu("Single Run");
+		mnPlotSingleTest.add(mnSingleRun);
+		
+		energyPlotCheck = new JCheckBoxMenuItem("Energy");
+		energyPlotCheck.setUI(new StayOpenCheckBoxMenuItemUI());
+		mnSingleRun.add(energyPlotCheck);
+		
+		renewablesPlotCheck = new JCheckBoxMenuItem("Renewables");
+		renewablesPlotCheck.setUI(new StayOpenCheckBoxMenuItemUI());
+		mnSingleRun.add(renewablesPlotCheck);
+		
+		nonRenPlotCheck = new JCheckBoxMenuItem("Non Renewables");
+		nonRenPlotCheck.setUI(new StayOpenCheckBoxMenuItemUI());
+		mnSingleRun.add(nonRenPlotCheck);
+		
+		energyTotalPlotCheck = new JCheckBoxMenuItem("Energy/Total");
+		energyTotalPlotCheck.setUI(new StayOpenCheckBoxMenuItemUI());
+		mnSingleRun.add(energyTotalPlotCheck);
+		
+		chargedPlotCheck = new JCheckBoxMenuItem("Cars Charged");
+		chargedPlotCheck.setUI(new StayOpenCheckBoxMenuItemUI());
+		mnSingleRun.add(chargedPlotCheck);
+		
+		slotsPlotCheck = new JCheckBoxMenuItem("Slots Used");
+		slotsPlotCheck.setUI(new StayOpenCheckBoxMenuItemUI());
+		mnSingleRun.add(slotsPlotCheck);
+		
+		mntmPlot = new JMenuItem("Plot!");
+		mnSingleRun.add(mntmPlot);
+		
+		
+		mntmSlotsUsed.addActionListener(action);
+		mntmRenewablestotalUsed.addActionListener(action);
+		mntmNonRenewablesUsed.addActionListener(action);
+		mntmRenewablesUsed.addActionListener(action);
 
 		
 		model = new Model();
@@ -1020,7 +1202,7 @@ private class ChangeHandler implements ChangeListener {
 	
 	
 	
-	public void computeResults(int cars_num)
+	public void computeResults(double cars_num)
 	{
 		model = new Model();
 		System.out.println("Cars: "+ cars_num);
@@ -1031,8 +1213,8 @@ private class ChangeHandler implements ChangeListener {
 		nonRenProgressBar.setValue(model.getNonRenEnergy());
 		energyProgressBar.setValue(model.getEnergy());
 		energyAllProgressBar.setValue(model.getRenewable_all_used());
-		slotProgressBar.setValue(model.getSlots_used());
-		chargedProgressBar.setValue(model.getCharged());
+		slotProgressBar.setValue((int) model.getSlots_used());
+		chargedProgressBar.setValue((int) model.getCharged());
 		
 		car_to_slot = model.getCar_to_slot();
 
@@ -1106,6 +1288,6 @@ private class ChangeHandler implements ChangeListener {
     	bySlotTable.getColumnModel().getColumn(1).setMaxWidth(max + 25);
     	bySlotTable.getColumnModel().getColumn(1).setMinWidth(max + 25);
 		
-		btnSaveAs.setEnabled(true);
+		mntmSaveAs.setEnabled(true);
 	}
 }

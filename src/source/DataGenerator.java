@@ -148,7 +148,7 @@ public class DataGenerator {
 		cars.get(car).setEndTime(new_end);
 	}
 
-	public ArrayList<Car> getCars(int count) {
+	public ArrayList<Car> getCars(double count) {
 		
 		if(count == cars.size() || (count == -1))
 		{

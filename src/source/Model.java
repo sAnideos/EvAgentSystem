@@ -383,11 +383,11 @@ public class Model {
 		return renewable_all_used;
 	}
 
-	public int getSlots_used() {
+	public double getSlots_used() {
 		return slots_used;
 	}
 
-	public int getCharged() {
+	public double getCharged() {
 		return charged;
 	}
 	
