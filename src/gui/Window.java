@@ -549,10 +549,11 @@ private class ChangeHandler implements ChangeListener {
 	
 	
 	
-
+// ---------------------- MAIN ---------------------------
 	/**
 	 * Launch the application.
 	 */
+	/*
 	public static void main(String[] args) {
 
 		try {
@@ -582,7 +583,7 @@ private class ChangeHandler implements ChangeListener {
 			}
 		});
 	}
-
+*/
 	/**
 	 * Create the application.
 	 */
@@ -1207,7 +1208,7 @@ private class ChangeHandler implements ChangeListener {
 		model = new Model();
 		System.out.println("Cars: "+ cars_num);
 		model.createAndRunModel(dt.getCars(cars_num), dt.getTime_slots(),
-				dt.getEnergy(), dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy(), w1, w2, w3);
+				dt.getEnergy(), dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy(), w1, w2, w3, 0, -1);
 		
 		renProgressBar.setValue(model.getRenEnergy());
 		nonRenProgressBar.setValue(model.getNonRenEnergy());

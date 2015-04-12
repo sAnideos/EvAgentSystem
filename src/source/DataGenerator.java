@@ -8,6 +8,9 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Random;
 
 public class DataGenerator {
@@ -167,6 +170,23 @@ public class DataGenerator {
 	}
 	
 	
+	public ArrayList<Car> getCarsByStartTime()
+	{
+		List<Car> sorted_cars = cars;
+		
+
+		Collections.sort(sorted_cars, new Comparator<Car>() {
+
+	        public int compare(Car c1, Car c2) {
+	            return c1.getStartTime() - c2.getStartTime();
+	        }
+	    });
+
+		return cars;
+	}
+	
+	
+	
 	public int getCarsNum()
 	{
 		return cars.size();
@@ -242,7 +262,7 @@ public class DataGenerator {
 			
 			for(Car c: cars)
 			{
-				System.out.println(c.getStartTime() + ", " + c.getEndTime() + ", " + c.getNeeds());
+				//System.out.println(c.getStartTime() + ", " + c.getEndTime() + ", " + c.getNeeds());
 			}
 				
 			renewable_energy = new int[time_slots];
@@ -260,8 +280,8 @@ public class DataGenerator {
 				}
 				renewable_energy[i] = energy_amount[0];
 				non_renewable_energy[i] = energy_amount[1];	
-				System.out.print(renewable_energy[i] + ", ");
-				System.out.println(non_renewable_energy[i]);
+				//System.out.print(renewable_energy[i] + ", ");
+				//System.out.println(non_renewable_energy[i]);
 				line = br.readLine();
 				//energy[i] = Integer.parseInt(line);
 				//System.out.println(energy[i]);
