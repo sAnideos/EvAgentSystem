@@ -74,6 +74,7 @@ public class DataGenerator {
 			n = rand.nextInt((car.getEndTime() - car.getStartTime()) + 1) + 1;
 			
 			car.setNeeds(n);
+			car.setMinNeeds(n);
 			
 			cars.add(car);
 			/*
@@ -244,8 +245,9 @@ public class DataGenerator {
 				car.setStartTime(car_properties[0]);
 				car.setEndTime(car_properties[1]);
 				car.setNeeds(car_properties[2]);
+				car.setMinNeeds(car_properties[3]);
 				//System.out.println("Ev: " + i + " Starts at: " + car.getStartTime() + 
-						//" ends at: " + car.getEndTime() + " needs: " + car.getNeeds());
+						//" ends at: " + car.getEndTime() + " with min needs : " + car.getMinNeeds() + " needs: " + car.getNeeds());
 				cars.add(car);
 			}
 			
@@ -317,7 +319,7 @@ public class DataGenerator {
 			
 			for(Car c: cars)
 			{
-				writer.println(c.getStartTime() + " " + c.getEndTime() + " " + c.getNeeds());
+				writer.println(c.getStartTime() + " " + c.getEndTime() + " " + c.getNeeds() + " " + c.getNeeds());
 			}
 			
 			for(int i = 0; i < time_slots; i++)

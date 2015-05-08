@@ -553,7 +553,7 @@ private class ChangeHandler implements ChangeListener {
 	/**
 	 * Launch the application.
 	 */
-	/*
+
 	public static void main(String[] args) {
 
 		try {
@@ -583,7 +583,7 @@ private class ChangeHandler implements ChangeListener {
 			}
 		});
 	}
-*/
+
 	/**
 	 * Create the application.
 	 */
@@ -797,11 +797,11 @@ private class ChangeHandler implements ChangeListener {
 		lblMoreSlots.setBounds(10, 498, 61, 14);
 		settingsPanel.add(lblMoreSlots);
 		
-		JLabel lblMoreCharged = new JLabel("More Charged");
+		JLabel lblMoreCharged = new JLabel("More Renewables");
 		lblMoreCharged.setBounds(206, 498, 84, 14);
 		settingsPanel.add(lblMoreCharged);
 		
-		JLabel lblMoreRenewables = new JLabel("More Renewables");
+		JLabel lblMoreRenewables = new JLabel("More Charged");
 		lblMoreRenewables.setBounds(94, 498, 89, 14);
 		settingsPanel.add(lblMoreRenewables);
 		

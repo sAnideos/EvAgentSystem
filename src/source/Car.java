@@ -7,6 +7,7 @@ public class Car {
 	private int start_time; // ti wra mporei na er8ei sto sta8mo
 	private int end_time; // ti wra prepei na fygei apo to sta8mo
 	private int needs; // how much energy it needs (in time slots)
+	private int min_needs;
 	private int completed; // how much of 'needs' is completed
 	private int initial_start_time = -1;
 	private int initial_needs;
@@ -36,6 +37,17 @@ public class Car {
 		this.needs = needs;
 		initial_needs = needs;
 	}
+	
+	public void setMinNeeds(int needs)
+	{
+		min_needs = needs;
+	}
+	
+	public int getMinNeeds()
+	{
+		return min_needs;
+	}
+	
 	public int getCompleted() {
 		return completed;
 	}
@@ -59,6 +71,7 @@ public class Car {
 	public void updateNeeds()
 	{
 		needs--;
+		min_needs--;
 	}
 	
 	public void addSlot(Integer s)
