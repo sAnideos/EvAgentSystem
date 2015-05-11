@@ -89,4 +89,13 @@ public class Car {
 		return slots_used;
 	}
 	
+	public String toString()
+	{
+		StringBuilder str = new StringBuilder();
+		
+		str.append("Available from: " + start_time + " to " + end_time);
+		str.append(" with needs: " + initial_needs);
+		return str.toString();
+	}
+	
 }
