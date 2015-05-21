@@ -3,8 +3,6 @@ package source;
 
 
 import java.awt.Color;
-import java.awt.Rectangle;
-import java.awt.Shape;
 import java.util.ArrayList;
 
 import javax.swing.JFrame;
@@ -12,8 +10,6 @@ import javax.swing.JFrame;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
-import org.jfree.chart.LegendItem;
-import org.jfree.chart.LegendItemCollection;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
@@ -105,7 +101,6 @@ public class GraphManagement extends JFrame{
 			for(int i = 0; i < t.getCars().size(); i++)
 			{
 				Double d = 1.0;
-				System.out.println("cars: " + c.get(i) + " energy: " + r.get(i));
 				series.add(c.get(i), r.get(i));
 				d = d + 1.0;
 			}

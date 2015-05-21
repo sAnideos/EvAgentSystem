@@ -171,7 +171,7 @@ public class DataGenerator {
 	}
 	
 	
-	public ArrayList<Car> getCarsByStartTime()
+	public ArrayList<Car> getCarsByStartTime(int count)
 	{
 		List<Car> sorted_cars = cars;
 		
@@ -182,8 +182,22 @@ public class DataGenerator {
 	            return c1.getStartTime() - c2.getStartTime();
 	        }
 	    });
+		
+		if(count == cars.size() || (count == -1))
+		{
+			return cars;
+		}
+		else
+		{
+			ArrayList<Car> temp = new ArrayList<Car>();
+			
+			for(int i = 0; i < count; i++)
+			{
+				temp.add(cars.get(i));
+			}
+			return temp;
+		}
 
-		return cars;
 	}
 	
 	
@@ -282,6 +296,7 @@ public class DataGenerator {
 				}
 				renewable_energy[i] = energy_amount[0];
 				non_renewable_energy[i] = energy_amount[1];	
+				energy[i] = energy_amount[0] + energy_amount[1];
 				//System.out.print(renewable_energy[i] + ", ");
 				//System.out.println(non_renewable_energy[i]);
 				line = br.readLine();

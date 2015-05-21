@@ -11,6 +11,7 @@ public class Car {
 	private int completed; // how much of 'needs' is completed
 	private int initial_start_time = -1;
 	private int initial_needs;
+	private int initial_min_needs;
 	private ArrayList<Integer> slots_used = new ArrayList<Integer>();
 	
 	
@@ -41,8 +42,13 @@ public class Car {
 	public void setMinNeeds(int needs)
 	{
 		min_needs = needs;
+		initial_min_needs = needs;
 	}
 	
+	public int getInitialMinNeeds() {
+		return initial_min_needs;
+	}
+
 	public int getMinNeeds()
 	{
 		return min_needs;
@@ -88,6 +94,7 @@ public class Car {
 	{
 		return slots_used;
 	}
+	
 	
 	public String toString()
 	{

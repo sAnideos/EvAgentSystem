@@ -1,5 +1,8 @@
 package source;
 
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
 public class Test {
@@ -102,7 +105,74 @@ public class Test {
 	}
 
 	
+	public String toString()
+	{
+
+		StringBuilder str = new StringBuilder();
+		
+		
+		str.append("Cars: ");
+		for(int i = 0; i < total_energy.size(); i++)
+		{
+			str.append(cars.get(i) + " ");
+		}
+		
+		str.append("\nTotal energy used: ");
+		for(int i = 0; i < total_energy.size(); i++)
+		{
+			str.append(total_energy.get(i) + " ");
+		}
+		
+		str.append("\nTotal renewables used: ");
+		for(int i = 0; i < total_energy.size(); i++)
+		{
+			str.append(renewables.get(i) + " ");
+		}
+		
+		str.append("\nTotal non renewables used: ");
+		for(int i = 0; i < non_renewables.size(); i++)
+		{
+			str.append(total_energy.get(i) + " ");
+		}
+		
+		str.append("\nTotal renewables/all energy used: ");
+		for(int i = 0; i < total_energy.size(); i++)
+		{
+			str.append(renewables_total.get(i) + " ");
+		}
+		
+		str.append("\nTotal cars charged: ");
+		for(int i = 0; i < total_energy.size(); i++)
+		{
+			str.append(cars_charged.get(i) + " ");
+		}
+		
+		str.append("\nTotal slots used: ");
+		for(int i = 0; i < total_energy.size(); i++)
+		{
+			str.append(slots.get(i) + " ");
+		}
+		
+		return str.toString();
+		
+	}
 	
+	public void writeToFile()
+	{
+		try {
+			PrintWriter writer = new PrintWriter("/exported_data/static.txt", "UTF-8");
+			
+			writer.print("Blah");
+			writer.close();
+			
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	
 	
 }

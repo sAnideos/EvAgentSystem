@@ -1,6 +1,5 @@
 package source;
 
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,6 +30,7 @@ public class Model {
 	private HashMap<Integer, ArrayList<Integer>> slot_to_car = new HashMap<Integer, ArrayList<Integer>>();
 	private ArrayList<Integer> who_charge = new ArrayList<Integer>(); // krataei apo to charges poioi tha fortisoun, an enas ksekinise na fortizei tote tha fortisei sigoura
 	private int[][] final_map;
+	private int[] renewables_used;
 	
 	
 	// to make them accessible from all the methods
@@ -60,7 +60,7 @@ public class Model {
 					charges = new IloNumVar[evs.size()];
 					ren_energy = new IloNumVar[ct][];
 					non_ren_energy = new IloNumVar[ct][];
-					final_map = new int[evs.size()][ct];
+					final_map = new int[evs.size()][ct + 4]; // +4 ... for the car info - start - end - min - max needs
 				}
 				else
 				{
@@ -68,8 +68,8 @@ public class Model {
 					charges = new IloNumVar[carsNumber];
 					ren_energy = new IloNumVar[ct][];
 					non_ren_energy = new IloNumVar[ct][];
-					final_map = new int[carsNumber][ct];
 				}
+				renewables_used = new int[ct];
 			}
 			
 			
@@ -90,6 +90,7 @@ public class Model {
 			{
 
 				int slots_need = evs.get(ev).getNeeds();
+				//System.out.println(slots_need);
 				IloLinearNumExpr p = cp.linearNumExpr(); // linear expression for the constraint
 				
 				for(int t = first_slot; t < ct; t++) // the time that the ev is available for charging
@@ -131,7 +132,7 @@ public class Model {
 				for(int ev = 0; ev < evs.size(); ev++)
 				{
 					int start = evs.get(ev).getStartTime();
-					int end = evs.get(ev).getEndTime() + 1;
+					int end = evs.get(ev).getEndTime();
 					if(t >= start && t <= end)
 					{
 						cars.addTerm(1, var[ev][t]);
@@ -152,7 +153,6 @@ public class Model {
 				
 				cp.addEq(energy_, cars, "energy = cars");
 			}
-
 			
 			// 3)
 			for(int t = first_slot; t < ct; t++) // the sum of evs that charge in a time slot must not exceed the num of slots
@@ -203,8 +203,13 @@ public class Model {
 			// 1)
 			// antikeimeniki synartisi, megistpopoiisi asswn
 			
-			
-			double normalized_w = w1 / (evs.size() * ct);
+			double all_energy = 0.0;
+			for(int i = 0; i < ct; i++)
+			{
+				all_energy += renewable_energy[i];
+				all_energy += non_renewable_energy[i];
+			}
+			double normalized_w = 100.0 / ((evs.size() * ct) + all_energy + evs.size());
 			
 			IloLinearNumExpr p_charges = cp.linearNumExpr();
 			for(int ev = 0; ev < evs.size(); ev ++)
@@ -213,13 +218,13 @@ public class Model {
 				int end = evs.get(ev).getEndTime() + 1;
 				for(int time = start; time < end; time++)
 				{
-					p_charges.addTerm(normalized_w, var[ev][time]);
+					p_charges.addTerm(normalized_w * w1, var[ev][time]);
 				}
 			}
-			normalized_w = w2 / evs.size();
+			//normalized_w = 1.0 / evs.size();
 			for(int ev = 0; ev < evs.size(); ev++)
 			{
-				p_charges.addTerm(normalized_w, charges[ev]);
+				p_charges.addTerm(normalized_w * w2, charges[ev]);
 			}
 			
 			
@@ -228,13 +233,8 @@ public class Model {
 			
 			
 			boolean stupid = false; // true gia to statiko
-			double all_energy = 0.0;
-			for(int i = 0; i < ct; i++)
-			{
-				all_energy += renewable_energy[i];
-				all_energy += non_renewable_energy[i];
-			}
-			normalized_w = w3 / all_energy;
+
+			//normalized_w = 1.0 / all_energy;
 			IloLinearNumExpr p_energy = cp.linearNumExpr();
 			if(stupid) // me to kolpo pou meiwnei tin aksia twn ananewsimwn
 			{
@@ -246,11 +246,11 @@ public class Model {
 				{
 					for(int en = 0; en < renewable_energy[t]; en++)
 					{
-						p_energy.addTerm(normalized_w, ren_energy[t][en]);
+						p_energy.addTerm(normalized_w * w3, ren_energy[t][en]);
 					}
 					for(int en = 0; en < non_renewable_energy[t]; en++)
 					{
-						p_energy.addTerm(normalized_w, non_ren_energy[t][en]);
+						p_energy.addTerm(normalized_w * w3, non_ren_energy[t][en]);
 					}
 					
 				}
@@ -283,11 +283,10 @@ public class Model {
 					last_car = 1;
 				}
 				
-				double factor = 0.8;
+				double factor = 0.9;
 				
 				double r = ((first_slot + ct) * 0.5) - first_slot;
 				double rate = 0.6 / ct;
-				System.out.println("The rate: " + rate);
 				for(int t = first_slot; t < ct; t++)
 				{
 //					if(renewable_energy[t] < 0.3 * non_renewable_energy[t])
@@ -298,11 +297,11 @@ public class Model {
 
 					for(int en = 0; en < renewable_energy[t]; en++)
 					{
-						p_energy.addTerm((factor * normalized_w), ren_energy[t][en]);
+						p_energy.addTerm((  normalized_w) * (w3 * factor), ren_energy[t][en]);
 					}
 					for(int en = 0; en < non_renewable_energy[t]; en++)
 					{
-						p_energy.addTerm(((1.0 - factor) * normalized_w), non_ren_energy[t][en]);
+						p_energy.addTerm((  normalized_w) * (w3 *  (1.0 - factor)), non_ren_energy[t][en]);
 					}
 //					if(t >= (first_slot + last_car) * 0.5)
 //					{
@@ -313,106 +312,50 @@ public class Model {
 //					{
 //						factor -= rate;
 //					}
-					if(factor - rate > 0)
-						factor -= rate;
-					System.out.println("The factor: " + factor);
+//					if(factor - rate > 0)
+//						factor -= rate;
 				}
 			}
-			System.out.println(p_energy);
 			// megistopoiisi oximnatwn pou fortizoun
 			/*
 			IloLinearNumExpr p_charges = cp.linearNumExpr();
 
 			*/
 			cp.addMaximize(cp.sum(p_charges, p_energy));
-				
+			
+
 			
 			if(cp.solve()) // solve the maximization problem and print the results
 			{
 				if(carsNumber == -1)
 				{
 					computeResults(cp, evs, ct, energy, chargers, renewable_energy, non_renewable_energy, first_slot);
+				
+				
+
 				}
 				else
 				{
+
 					for(int ev = 0; ev < evs.size(); ev++)
 					{
 						if(cp.getValue(var[ev][first_slot]) == 1.0)
 						{
-							slots_used++;
 							final_map[ev][first_slot] = 1;
 							evs.get(ev).updateNeeds();
-							System.out.println("Needs: " + evs.get(ev).getNeeds());
 							if(!who_charge.contains(ev))
-							who_charge.add(ev);
+								who_charge.add(ev);
 						}
 					}
-					
 					//who_charge = new ArrayList<Integer>();
-					for(int ev = 0; ev < evs.size(); ev++)
-					{
-						if(cp.getValue(charges[ev]) == 1.0)
-						{
-							//System.out.println("ti ginetai? " + ev);
-							//System.out.println(evs.get(ev).getStartTime() + " - " + evs.get(ev).getEndTime() + " --> " + evs.get(ev).getNeeds()); 
-
-						}
-					}
 					
 					for(int en = 0; en < renewable_energy[first_slot]; en++)
 					{		
-						all_ren ++;
 						if(cp.getValue(ren_energy[first_slot][en]) == 1.0)
 						{
-							used_r++;
+							renewables_used[first_slot]++;
 						}
 					}
-					for(int en = 0; en < non_renewable_energy[first_slot]; en++)
-					{
-						all_non ++;
-						if(cp.getValue(non_ren_energy[first_slot][en]) == 1.0)
-						{
-							used_n++;
-						}
-					}
-					
-					renewable_used = Math.round(((used_r / all_ren)*100));
-					System.out.println("Used " + ((used_r / all_ren)*100) + "% of renewable energy (" + (int)used_r + "/" + (int)all_ren + ")");
-					
-					non_renewable_used = Math.round(((used_n / all_non)*100));
-					System.out.println(((used_n / all_non)*100));
-					System.out.println("Used " + ((used_n / all_non)*100) + "% of non renewable energy (" + (int)used_n + "/" + (int)all_non + ")");
-					
-					energy_used = Math.round((((used_r + used_n) / (all_ren + all_non))*100)) ;
-					
-			    	new DecimalFormat("#.00"); 
-			    	renewable_all_used = Math.round((((used_r / (used_r + used_n))*100)));
-			    	System.out.println("Energy used: " + energy_used + "%");
-			    	System.out.println("Renewable/Energy used: " + renewable_all_used + "%");
-					charged = Math.round((who_charge.size() / (float) carsNumber) * 100);
-					System.out.println("Charged: " + charged + "%");
-					
-					//prints map
-//					for(int ev = 0; ev < evs.size(); ev++)
-//					{
-//						
-//						for(int t = first_slot; t < ct; t++)
-//						{
-//							if(cp.getValue(var[ev][t]) == 1.0)
-//							{
-//
-//								System.out.print("O" + "  ");
-//							}
-//							else
-//							{
-//								System.out.print("X" + "  ");
-//							}
-//								
-//						}
-//						
-//						System.out.println(evs.get(ev).getNeeds() + "    Was available from: " + evs.get(ev).getStartTime() + " to: " + evs.get(ev).getEndTime());
-//					}
-					
 					
 				}
 			}
@@ -425,46 +368,40 @@ public class Model {
 		
 	}
 
-	public void getRealTimeStats()
-	{
-		
-	}
 	
 	public void computeResults(IloCplex cp, ArrayList<Car> evs, int ct, int[] energy, int chargers, int[] renewable_energy, int[] non_renewable_energy, int first_slot) throws UnknownObjectException, IloException
 	{
 
+		final_map = new int[evs.size()][ct + 4];
+		
 		
 		for(int ev = 0; ev < evs.size(); ev++)
 		{
-			System.out.println(ev + ", " + first_slot);
-			if(cp.getValue(var[ev][first_slot]) == 1.0)
-			{
-				final_map[ev][first_slot] = 1;
-				evs.get(ev).updateNeeds();
-				System.out.println("Needs: " + evs.get(ev).getNeeds());
-			}
-			int start = evs.get(ev).getStartTime();
-			int end = evs.get(ev).getEndTime();
-			int needs = evs.get(ev).getNeeds();
+			int temp = ct;
+			Car temp_car = evs.get(ev);
+			final_map[ev][temp] = temp_car.getInitial_start_time();
+			temp++;
+			final_map[ev][temp] = temp_car.getEndTime();
+			temp++;
+			final_map[ev][temp] = temp_car.getMinNeeds();
+			temp++;
+			final_map[ev][temp] = temp_car.getInitial_needs();
+		}
+		
+		
+		for(int ev = 0; ev < evs.size(); ev++)
+		{
+//			if(cp.getValue(var[ev][first_slot]) == 1.0)
+//			{
+//				final_map[ev][first_slot] = 1;
+//				evs.get(ev).updateNeeds();
+//			}
+
 			for(int t = first_slot; t < ct; t++)
 			{
 				if(cp.getValue(var[ev][t]) == 1.0)
 				{
-					
-					slots_used++;
-					// add to car list
-					//if(car_to_slot.get(ev) == null)
-					//{
-						evs.get(ev).addSlot(t);
-						//car = new Car();
-						//car.addSlot(t);
-						//car_to_slot.put(ev, car);
-					//}
-					//else
-					//{
-						//car_to_slot.get(ev).addSlot(t);;
-					//}
-					
+					evs.get(ev).addSlot(t);
 					// add to slot list
 					if(slot_to_car.get(t) == null)
 					{
@@ -477,16 +414,14 @@ public class Model {
 						slot_to_car.get(t).add(ev);
 					}
 					
-					System.out.print("O" + "  ");
+					final_map[ev][t] = 1;
 				}
 				else
 				{
-					System.out.print("X" + "  ");
+					final_map[ev][t] = 0;
 				}
 					
 			}
-			
-			System.out.println(needs + "    Was available from: " + start + " to: " + end);
 		}
 		
 		who_charge = new ArrayList<Integer>();
@@ -496,86 +431,43 @@ public class Model {
 			{
 				charged ++;
 				who_charge.add(ev);
-				//System.out.println("Vehicle: " + (ev + 1) + " can be charged!");
-			}
-			else
-			{
-				//System.out.println("Vehicle: " + (ev + 1) + " cannot be charged...");
 			}
 		}
 		
-		//System.out.println("Charged: " + charged + ", All: " + evs.size());
-		float all = evs.size();
-		charged = (int) ((charged / all) * 100);
-		
-		for(int i = first_slot; i < ct; i++)
-		{
-			for(int ev = 0; ev < evs.size(); ev++)
-			{
-				if(cp.getValue(var[ev][i]) == 1.0)
-				{
-				}
-			}
-			//System.out.println("Energy used for time slot " + i + " is " + energy_used + " and the remaining"
-					//+ " energy is " + (renewable_energy[i] + non_renewable_energy[i] - energy_used) + ".");
-		}
-		used_r = 0; //renewable
-		used_n = 0; //non renewable
-		all_ren = 0;
-		all_non = 0;
+
 		for(int i = first_slot; i < ct; i++)
 		{
 			for(int en = 0; en < renewable_energy[i]; en++)
 			{		
-				all_ren ++;
 				if(cp.getValue(ren_energy[i][en]) == 1.0)
 				{
-					used_r++;
+					renewables_used[i]++;
 				}
 			}
-			for(int en = 0; en < non_renewable_energy[i]; en++)
-			{
-				all_non ++;
-				if(cp.getValue(non_ren_energy[i][en]) == 1.0)
-				{
-					used_n++;
-				}
-			}
-			//System.out.print("used " + ((used / non_renewable_energy[i])*100) + "% ");
-			//System.out.println();
 		}
-		renewable_used = Math.round(((used_r / all_ren)*100));
-		//System.out.println("Used " + ((used_r / all_ren)*100) + "% of renewable energy (" + (int)used_r + "/" + (int)all_ren + ")");
-		
-		non_renewable_used = Math.round(((used_n / all_non)*100));
-		System.out.println(((used_n / all_non)*100));
-		//System.out.println("Used " + ((used_n / all_non)*100) + "% of non renewable energy (" + (int)used_n + "/" + (int)all_non + ")");
-		
-		energy_used = Math.round((((used_r + used_n) / (all_ren + all_non))*100)) ;
-		
-    	new DecimalFormat("#.00"); 
-    	renewable_all_used = Math.round((((used_r / (used_r + used_n))*100)));
-    	System.out.println(used_n);
-    	System.out.println((int) (((used_n / (used_r + used_n))*100)));
-    	
-    	//System.out.print(df.format(renewable_all_used) + "% of energy used was reanewable!");
-    	
-    	float all_slots = ct * chargers;
-    	//System.out.println("All slots: " + all_slots);
-    	//System.out.println("Slots used: " + slots_used);
-    	slots_used = Math.round(((slots_used / all_slots) * 100));
-    	
     	car_to_slot = evs;
+    	
 	}
 	
 	
-	public void realTimeRun()
+	public Results realTimeRun(String path)
 	{
 		DataGenerator dt = new DataGenerator(0, 0, 0, 0);
-		dt.readFromFile("C:/Users/Andreas Sitaras/Desktop/big_test2.txt");
+		dt.readFromFile(path);
 		//dt.readFromFile("F:/Eclipse Workshop/EvAgentSystem/temp_test.txt");
 
-		ArrayList<Car> cars = dt.getCarsByStartTime();
+		ArrayList<Car> cars = dt.getCarsByStartTime(-1);
+		
+		
+		final_map = new int[dt.getCarsNum()][dt.getTime_slots() + 4];
+		
+		for(int ev = 0; ev < cars.size(); ev++)
+		{
+			final_map[ev][dt.getTime_slots()] = cars.get(ev).getInitial_start_time();
+			final_map[ev][dt.getTime_slots() + 1] = cars.get(ev).getEndTime();
+			final_map[ev][dt.getTime_slots() + 2] = cars.get(ev).getInitialMinNeeds();
+			final_map[ev][dt.getTime_slots() + 3] = cars.get(ev).getInitial_needs();
+		}
 
 		ArrayList<Car> currentCars = new ArrayList<Car>();
 		int list_counter = 0;
@@ -587,7 +479,10 @@ public class Model {
 			{
 				while(cars.get(list_counter).getStartTime() == slot)
 				{
-					currentCars.add(cars.get(list_counter));
+//					if(cars.get(list_counter).getInitial_needs() <= 15)
+//					{
+						currentCars.add(cars.get(list_counter));
+//					}
 					list_counter ++;
 					if(list_counter == cars.size())
 					{
@@ -600,14 +495,34 @@ public class Model {
 			// updating current cars - going to be a function
 			
 
-			System.out.println(dt.getCarsNum() + ", " + dt.getTime_slots()); 
-			createAndRunModel(currentCars, dt.getTime_slots(), dt.getEnergy(), dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy(), 0.0, 0.9, 0.1, slot, dt.getCarsNum());
-//			try {
-//				System.in.read();
-//			} catch (IOException e) {
-//				 //TODO Auto-generated catch block
-//				e.printStackTrace();
+//			int start = 10;
+//			int rate = 5;
+//			while(start <= dt.getCarsNum())
+//			{
+//		    	  	
+//				System.out.println(dt.getCarsNum() + ", " + dt.getTime_slots()); 
+//				createAndRunModel(dt.getCars(start), dt.getTime_slots(), dt.getEnergy(), 
+//						dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy(), 0.0, 1.0, 0.0, slot, dt.getCarsNum());
+//				
+//				if((start + rate) >= dt.getCarsNum())
+//				{
+//					start = dt.getCarsNum();
+//					
+//					createAndRunModel(dt.getCars(start), dt.getTime_slots(), dt.getEnergy(), 
+//							dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy(), 0.0, 1.0, 0.0, slot, dt.getCarsNum());
+//					
+//					break;
+//				}
+//				else
+//				{
+//					start += rate;
+//				}
+//
 //			}
+			
+			System.out.println(dt.getCarsNum() + ", " + dt.getTime_slots()); 
+			createAndRunModel(currentCars, dt.getTime_slots(), dt.getEnergy(), dt.getChargers(), 
+					dt.getRenewable_energy(), dt.getNon_renewable_energy(), 0.0, 1.0, 0.0, slot, dt.getCarsNum());
 			
 			
 			for(Car c: currentCars)
@@ -628,10 +543,6 @@ public class Model {
 			}
 		}
 
-		float all_slots = dt.getTime_slots() * dt.getChargers();
-    	slots_used = Math.round(((slots_used / all_slots) * 100));
-
-    	System.out.println("Slots used: " + slots_used);
 		
 		for(int i = 0; i < dt.getCarsNum(); i++)
 		{
@@ -641,10 +552,99 @@ public class Model {
 			}
 			//System.out.println(" " + currentCars.get(i).getInitial_start_time() + " - " + currentCars.get(i).getEndTime());
 		}
+		
+		
+		int[][] energy = new int[dt.getTime_slots()][3];
+		for(int i = 0; i < dt.getTime_slots(); i++)
+		{
+			energy[i][0] = dt.getRenewable_energy()[i];
+			energy[i][1] = dt.getNon_renewable_energy()[i];
+			energy[i][2] = dt.getRenewable_energy()[i] + dt.getNon_renewable_energy()[i];
+		}
 
-
+		Results results = new Results(final_map, energy_used, dt.getChargers(), energy, renewables_used);
+		return results;
 		
 	} 
+	
+	
+	
+	private int number_of_cars;
+	public Test multiRunsStatic(int start, int rate, String path)
+	{
+		Test test = new Test();
+		int count = 0;
+		do
+		{
+	    	 count++;
+	    	 System.out.println("Run: " + count);
+			//compute
+			Results results = this.staticRun(path, start);
+			
+			test.addCars((double)start);
+			test.addCars_charged(results.getCarChargedPercentage());
+			test.addTotal_energy(results.getEnergyUsedPercentage());
+			test.addRenewables(results.getRenewablesUsedPercentage());
+			test.addRenewables_total(results.getRenewablesPerAllPercentage());
+			test.addNon_renewables(results.getNonRenewablesUsedPercentage());
+			test.addSlots(results.getSlotsUsedPercentage());
+			
+			System.out.println("\n");
+			//results.printMap();
+			System.out.println(results.toString());
+			if((start + rate) >= number_of_cars)
+			{
+				start = number_of_cars;
+				
+				//compute
+				results = this.staticRun(path, start);
+				
+				test.addCars((double)start);
+				test.addCars_charged(results.getCarChargedPercentage());
+				test.addTotal_energy(results.getEnergyUsedPercentage());
+				test.addRenewables(results.getRenewablesUsedPercentage());
+				test.addRenewables_total(results.getRenewablesPerAllPercentage());
+				test.addNon_renewables(results.getNonRenewablesUsedPercentage());
+				test.addSlots(results.getSlotsUsedPercentage());
+				
+				
+				System.out.println("\n");
+				//results.printMap();
+				System.out.println(results.toString());
+				break;
+			}
+			else
+			{
+				start += rate;
+			}
+	
+		} while(start <= number_of_cars);
+		
+		return test;
+	}
+	
+	public Results staticRun(String path, int cars_num)
+	{
+		DataGenerator dt = new DataGenerator(0, 0, 0, 0);
+		dt.readFromFile(path);
+		number_of_cars = dt.getCarsNum();
+		
+		createAndRunModel(dt.getCarsByStartTime(cars_num), dt.getTime_slots(), 
+				dt.getEnergy(), dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy(), 0.0, 1.0, 0.0, 0, -1);
+
+		
+		int [][] energy_map = new int[dt.getTime_slots()][3];
+		for(int i = 0; i < dt.getTime_slots(); i++)
+		{
+			energy_map[i][0] = dt.getRenewable_energy()[i];
+			energy_map[i][1] = dt.getNon_renewable_energy()[i];
+			energy_map[i][2] = dt.getRenewable_energy()[i] + dt.getNon_renewable_energy()[i];			
+		}
+		
+		Results results = new Results(final_map, energy_used, dt.getChargers(), energy_map, renewables_used);
+		
+		return results;
+	}
 	
 	
 	public void computeRealTimeResults()

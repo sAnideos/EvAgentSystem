@@ -43,6 +43,7 @@ import javax.swing.table.TableCellRenderer;
 import source.Car;
 import source.DataGenerator;
 import source.Model;
+import source.Results;
 import source.Test;
 import source.StatsManagement;
 
@@ -297,6 +298,7 @@ public class Window {
 						s.setTestName(temp);
 						sm.addStats(s);
 				    	sm.printStats();
+				    	s.writeToFile();
 					}
 					else
 					{
@@ -1203,19 +1205,25 @@ private class ChangeHandler implements ChangeListener {
 	
 	
 	
-	public void computeResults(double cars_num)
+	public void staticRun()
+	{
+		
+	}
+	
+	
+	public void computeResults(int cars_num)
 	{
 		model = new Model();
 		System.out.println("Cars: "+ cars_num);
-		model.createAndRunModel(dt.getCars(cars_num), dt.getTime_slots(),
+		model.createAndRunModel(dt.getCarsByStartTime(cars_num), dt.getTime_slots(),
 				dt.getEnergy(), dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy(), w1, w2, w3, 0, -1);
 		
-		renProgressBar.setValue(model.getRenEnergy());
-		nonRenProgressBar.setValue(model.getNonRenEnergy());
-		energyProgressBar.setValue(model.getEnergy());
-		energyAllProgressBar.setValue(model.getRenewable_all_used());
-		slotProgressBar.setValue((int) model.getSlots_used());
-		chargedProgressBar.setValue((int) model.getCharged());
+//		renProgressBar.setValue((int)Math.round(results.getRenewablesUsedPercentage()));
+//		nonRenProgressBar.setValue((int)Math.round(results.getNonRenewablesUsedPercentage()));
+//		energyProgressBar.setValue((int)Math.round(results.getEnergyUsedPercentage()));
+//		energyAllProgressBar.setValue((int)Math.round(results.getRenewablesPerAllPercentage()));
+//		slotProgressBar.setValue((int)Math.round(results.getSlotsUsedPercentage()));
+//		chargedProgressBar.setValue((int)Math.round(results.getCarChargedPercentage()));
 		
 		car_to_slot = model.getCar_to_slot();
 
