@@ -3,6 +3,7 @@ package customDynamic;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 
 import charts.MatlabCode;
 import source.Car;
@@ -22,19 +23,42 @@ public class Dynamic {
 	private int[] renewables_used; // renewables used in every slot, to use it in the results
 	private int[][] final_map;
 	private DataGenerator dt;
-	private String path;
 	
-	public Dynamic(String path)
+	public DataGenerator getDataGenerator() {
+		return dt;
+	}
+
+	
+	public Dynamic(DataGenerator dt)
 	{
-		this.path = path;
+		this.dt = dt;
 		this.resetData();
 	}
 	
 	
+	// old constructor
+//	public Dynamic(String path, int[] data)
+//	{
+//		if(data == null)
+//		{
+//			dt = new DataGenerator(0, 0, 0, 0);
+//			dt.readFromFile(path);
+//		}
+//		else
+//		{
+//			//0 evs, 1 time_slots, 2 chargers, 3 energy_range
+//			dt = new DataGenerator(data[0], data[1], data[2], data[3]);
+//			dt.generateCarData();
+//			dt.generateEnergyData();
+//			dt.generateDiverseEnergy();	
+//		}
+//		this.resetData();
+//	}
+	
+	
 	private void resetData()
 	{
-		dt = new DataGenerator(0, 0, 0, 0);
-		dt.readFromFile(path);
+
 		
 		ct = dt.getTime_slots();
 		chargers = dt.getChargers();
@@ -52,7 +76,6 @@ public class Dynamic {
 			energy_map[i][2] = dt.getRenewable_energy()[i] + dt.getNon_renewable_energy()[i];
 			renewables_used[i] = 0;
 		}
-		
 		
 		for(int i = 0; i < slots.length; i++)
 		{
@@ -116,8 +139,19 @@ public class Dynamic {
 	{
 		
 
-		evs = dt.getCarsByStartTime(cars_num);
+		evs = new ArrayList<Car>();
+		
+		for(Car ev: dt.getCarsByStartTime(cars_num))
+		{
+			Car c = new Car();
+			c.setEndTime(ev.getEndTime());
+			c.setStartTime(ev.getStartTime());
+			c.setMinNeeds(ev.getMinNeeds());
+			c.setNeeds(ev.getNeeds());
+			evs.add(c);
+		}
 
+		System.out.println(dt.toString());
 		
 		ArrayList<Car> currentCars = new ArrayList<Car>();
 
@@ -159,7 +193,8 @@ public class Dynamic {
 				{
 					available_slots.add(slots[i]);
 				}
-				Collections.sort(available_slots, new LoadComparator());
+				// sort by energy
+				//Collections.sort(available_slots, new LoadComparator());
 				int ren_used = 0; // it is used to reset the slots back to normal
 				for(int i = 0; i < available_slots.size(); i++)
 				{

@@ -3,6 +3,8 @@ package source;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 public class Results {
 
@@ -14,6 +16,8 @@ public class Results {
 	private int[][] initial_energy; // 0 - renewables, 1 - non_renewables, 2 - all energy
 	private int[] renewables_used;
 	int ct;
+	
+
 	
 	
 	public Results(int[][] final_map, int energy_used, int chargers, int[][] energy, int[] ren_used)
@@ -150,8 +154,14 @@ public class Results {
 			all += (initial_energy[t][2] - initial_energy[t][0]);
 		}
 		
+		if((r_usage == 0.0) && (all == 0.0))
+		{
+			return 0.0;
+		}
+		
 		percentage = ((r_usage / all)*100);
 		
+
 		
 		return round(percentage, 2);
 	}
@@ -167,7 +177,10 @@ public class Results {
 			r_usage += renewables_used[t];
 			all += (load[t]);
 		}
-		
+		if((r_usage == 0.0) && (all == 0.0))
+		{
+			return 0.0;
+		}
 		percentage = ((r_usage / all)*100);
 		
 		
@@ -212,7 +225,15 @@ public class Results {
 				}
 			}
 		}
-		percentage = ((charged / ((final_map[0].length - 4)*chargers))*100);
+		
+		double k = ((final_map[0].length - 4)*chargers);
+		
+		if((charged == 0.0) && (k == 0.0))
+		{
+			return 0.0;
+		}
+		
+		percentage = ((charged / k)*100);
 		
 		return round(percentage, 2);
 	}
@@ -277,6 +298,74 @@ public class Results {
 		return str.toString();
 	}
 	
+	
+
+	public HashMap<Integer, ArrayList<Integer>> getSlotToCar()
+	{
+		HashMap<Integer, ArrayList<Integer>> slot_to_car = new HashMap<Integer, ArrayList<Integer>>();;
+		
+		
+		for(int ev = 0; ev < final_map.length; ev++)
+		{
+			for(int t = 0; t < ct; t++)
+			{
+				if(final_map[ev][t] == 1)
+				{
+					if(slot_to_car.get(t) == null)
+					{
+						ArrayList<Integer> temp = new ArrayList<Integer>();
+						temp.add(ev);
+						slot_to_car.put(t, temp);
+					}
+					else
+					{
+						slot_to_car.get(t).add(ev);
+					}
+				}
+			}
+		}
+		
+		return slot_to_car;
+	}
+	
+	
+	public ArrayList<String> getCarToSlot()
+	{
+		ArrayList<String> car_to_slot = new ArrayList<String>();
+		
+		for(int ev = 0; ev < final_map.length; ev++)
+		{
+			StringBuilder list = new StringBuilder();
+			for(int t = 0; t < ct; t++)
+			{
+				if(final_map[ev][t] == 1)
+				{
+					list.append(t + ", ");
+				}
+			}
+
+			if(list.length() == 0)
+			{
+				car_to_slot.add("Didn't charge!");
+			}
+			else
+			{
+				car_to_slot.add(list.toString().substring(0, list.toString().length() - 2));
+			}
+		}
+		
+		return car_to_slot;
+	}
+	
+	
+	public String getCarInfo(int ev)
+	{
+		StringBuilder str = new StringBuilder();
+		str.append("Was available from: " + final_map[ev][ct] + " to ");
+		str.append(final_map[ev][ct + 1] + " with needs: ");
+		str.append(final_map[ev][ct + 2] + " min and " + final_map[ev][ct + 3] + " max.");
+		return str.toString();
+	}
 	
 	// round a double number with the desired precision
 	public static double round(double value, int places) {

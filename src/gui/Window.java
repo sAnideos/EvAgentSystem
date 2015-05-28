@@ -60,6 +60,8 @@ import javax.swing.JTextField;
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JSpinner;
 
+import customDynamic.Dynamic;
+
 public class Window {
 
 	// model
@@ -69,12 +71,19 @@ public class Window {
 	private int evs = 1;
 	private int time_slots = 2;
 	private int chargers = 1;
+	
+	private int[] data = new int[4];
+	private String path;
+	
 	private double w1 = 0.35, w2 = 0.35, w3 = 0.30;
-	private ArrayList<Car> car_to_slot;
+	private ArrayList<String> car_to_slot;
 	private HashMap<Integer, ArrayList<Integer>> slot_to_car;
-	private int read_file = 0; // 1 - button "File" was pressed, 0 - user input
 	private StatsManagement sm = new StatsManagement();
 	private Test s;
+	private int computed = 0; // 0 - not computed solution, 1 - computed solution
+	private int algorithm = 0; // 0 - static, 1 - custom dynamic, 2 - cplex dynamic
+	private Results r; // the results of the run
+	private Test t; // the results of the multirun
 	
 	
 	public static class StayOpenCheckBoxMenuItemUI extends BasicCheckBoxMenuItemUI {
@@ -106,28 +115,38 @@ public class Window {
 	    	
 			int start = (int) startSpinner.getValue();
 			int rate = (int) rateSpinner.getValue();
-			while(start <= dt.getCarsNum())
+			if(algorithm == 0) // offline
 			{
-		    	  	
-				computeResults(start);
-				setStatsManagement(start);
-
-				
-				if((start + rate) >= dt.getCarsNum())
-				{
-					start = dt.getCarsNum();
-					
-					computeResults(start);
-					
-					setStatsManagement(start);
-					
-					break;
-				}
-				else
-				{
-					start += rate;
-				}
-
+				model = new Model(dt, w1, w2, w3);
+				t = model.multiRunsStatic(start, rate);
+				chargedProgressBar.setValue(t.getCarsChargedAverage());
+				energyAllProgressBar.setValue(t.getRenewablesPerAllAverage()); 
+				energyProgressBar.setValue(t.getEnergyAverage());
+				nonRenProgressBar.setValue(t.getNonRenewablesAverage());
+				renProgressBar.setValue(t.getReneablesAverage());
+				slotProgressBar.setValue(t.getSlotsUsedAverage());
+			}
+			else if(algorithm == 1)//custom online
+			{
+				Dynamic d = new Dynamic(dt);
+				t = d.multiRun(start, rate);
+				chargedProgressBar.setValue(t.getCarsChargedAverage());
+				energyAllProgressBar.setValue(t.getRenewablesPerAllAverage()); 
+				energyProgressBar.setValue(t.getEnergyAverage());
+				nonRenProgressBar.setValue(t.getNonRenewablesAverage());
+				renProgressBar.setValue(t.getReneablesAverage());
+				slotProgressBar.setValue(t.getSlotsUsedAverage());
+			}
+			else // cplex offline
+			{
+				model = new Model(dt, w1, w2, w3);
+				t = model.multiRealTimeRun(start, rate);
+				chargedProgressBar.setValue(t.getCarsChargedAverage());
+				energyAllProgressBar.setValue(t.getRenewablesPerAllAverage()); 
+				energyProgressBar.setValue(t.getEnergyAverage());
+				nonRenProgressBar.setValue(t.getNonRenewablesAverage());
+				renProgressBar.setValue(t.getReneablesAverage());
+				slotProgressBar.setValue(t.getSlotsUsedAverage()); 
 			}
 	    	btnCompute.setEnabled(true);
 	    	btnRandom.setEnabled(true);
@@ -176,20 +195,10 @@ public class Window {
 			
 			if(e.getActionCommand().compareTo("compute") == 0)
 			{
+				computed = 1;
 	        	table_model_car.setRowCount(0);
 	        	table_model_slot.setRowCount(0);
 				consoleScreen.setText(null);
-				//System.out.println("time_slots: " + time_slots);
-				if(!(read_file == 1) && (!fileCheckBox.isSelected()))
-				{
-					dt = new DataGenerator(evs, time_slots, chargers, energy_range);
-					dt.generateCarData();
-					dt.generateEnergyData();
-					dt.generateDiverseEnergy();			
-					fileCheckBox.setEnabled(false);
-				}
-				read_file = 0;
-				//consoleScreen.setText("" + read_file);
 				
 				if(multiRunsCheckBox.isSelected())
 				{
@@ -206,7 +215,7 @@ public class Window {
 			}
 			else if(e.getActionCommand().compareTo("save_as") == 0)
 			{
-				if(dt != null)
+				if(computed == 1)
 				{
 					JFileChooser chooser = new JFileChooser();
 					chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
@@ -225,13 +234,13 @@ public class Window {
 						            "Confirm", JOptionPane.YES_NO_OPTION, //
 						            JOptionPane.QUESTION_MESSAGE);
 						    if (response == JOptionPane.YES_OPTION) {
-						    	dt.writeToFile(path);
+						    	model.getDataGenerator().writeToFile(path);
 						    } 
 	
 					   }
 					   else
 					   {
-						   dt.writeToFile(path);
+						   model.getDataGenerator().writeToFile(path);
 					   }
 					   
 					}
@@ -242,6 +251,11 @@ public class Window {
 					consoleScreen.setText("Compute the solution first!");
 				}
 			}
+			else if(e.getActionCommand().compareTo("GenerateData") == 0)
+			{
+				dt = new DataGenerator(data[0], data[1], data[2], data[3]);
+				dt.generateAllData();
+			}
 			else if(e.getActionCommand().compareTo("open") == 0)
 			{
 				JFileChooser chooser = new JFileChooser();
@@ -249,13 +263,10 @@ public class Window {
 				int option = chooser.showOpenDialog(frmElectricVehicleAgent); // parentComponent must a component like JFrame, JDialog...
 				if (option == JFileChooser.APPROVE_OPTION) {
 				   File selectedFile = chooser.getSelectedFile();
-				   String path = selectedFile.getAbsolutePath();
-				  // System.out.println(path.toString());
-				   dt = new DataGenerator(0,0,0,0);
-				   dt.readFromFile(path);
-				   read_file = 1;
-				   fileCheckBox.setEnabled(true);
+				   path = selectedFile.getAbsolutePath();
 				}
+				dt = new DataGenerator(0, 0, 0, 0);
+				dt.readFromFile(path);
 			}
 			else if(e.getActionCommand().compareTo("random") == 0)
 			{
@@ -295,10 +306,8 @@ public class Window {
 					if(!model2.contains(temp))
 					{
 						listModel.addElement(temp);
-						s.setTestName(temp);
-						sm.addStats(s);
-				    	sm.printStats();
-				    	s.writeToFile();
+						t.setTestName(temp);
+						sm.addStats(t);
 					}
 					else
 					{
@@ -331,6 +340,28 @@ public class Window {
 					lblStart.setVisible(false);
 					lblRate.setVisible(false);
 				}
+			}
+			else if(e.getActionCommand().compareTo("CplexOffline") == 0)
+			{
+				chckbxmntmCustomOnline.setSelected(false);
+				chckbxmntmCplexOffline.setSelected(true);
+				chckbxmntmCplexOnline.setSelected(false);
+				algorithm = 0;
+				
+			}
+			else if(e.getActionCommand().compareTo("CplexOnline") == 0)
+			{
+				chckbxmntmCustomOnline.setSelected(false);
+				chckbxmntmCplexOffline.setSelected(false);
+				chckbxmntmCplexOnline.setSelected(true);
+				algorithm = 2;
+			}
+			else if(e.getActionCommand().compareTo("CustomOnline") == 0)
+			{
+				chckbxmntmCustomOnline.setSelected(true);
+				chckbxmntmCplexOffline.setSelected(false);
+				chckbxmntmCplexOnline.setSelected(false);
+				algorithm = 1;
 			}
 			else if(e.getActionCommand().compareTo("plot_ren") == 0)
 			{
@@ -379,12 +410,14 @@ private class ChangeHandler implements ChangeListener {
            if(source.getName().equals("energy"))
            {
         	   energy_range = source.getValue();
+        	   data[3] = source.getValue();
         	   energyTextPane.setText("" + energy_range);
         	   //System.out.println("energy: " + energy_range);
            }
            else if (source.getName().equals("car"))
            {
         	   evs = source.getValue();
+        	   data[0] = source.getValue();
         	   carTextPane.setText("" + evs);
         	   //System.out.println("evs: " + evs);
         	   energySlider.setMaximum(evs);
@@ -392,14 +425,16 @@ private class ChangeHandler implements ChangeListener {
            else if (source.getName().equals("slot"))
            {
         	   time_slots = source.getValue();
+        	   data[1] = source.getValue();
         	   slotTextPane.setText("" + time_slots);
         	  //System.out.println("time_slots: " + time_slots);
            }
            else if(source.getName().equals("charger"))
            {
         	   chargers = source.getValue();
+        	   data[2] = source.getValue();
         	   chargerTextPane.setText("" + chargers);
-        	   //System.out.println("chargers: " + chargers);
+        	   System.out.println("chargers: " + chargers);
            }
            else if(source.getName().equals("ren_w"))
            {
@@ -516,7 +551,6 @@ private class ChangeHandler implements ChangeListener {
 	private JTextPane renWeightPane;
 	private JTextPane chargedWeightPane;
 	private JCheckBox multiRunsCheckBox;
-	private JCheckBox fileCheckBox;
 	private JMenuBar menuBar;	
 	private JMenu fileMenu;	
 	private JMenuItem mntmOpen;	
@@ -547,6 +581,11 @@ private class ChangeHandler implements ChangeListener {
 	private JSpinner rateSpinner;
 	private JLabel lblStart;
 	private JLabel lblRate;
+	private JMenu mnAlgorithm;
+	private JCheckBoxMenuItem chckbxmntmCplexOffline;
+	private JCheckBoxMenuItem chckbxmntmCplexOnline;
+	private JCheckBoxMenuItem chckbxmntmCustomOnline;
+	private JButton btnGenerateData;
 	
 	
 	
@@ -675,7 +714,7 @@ private class ChangeHandler implements ChangeListener {
 		btnRandom = new JButton("Randomize");
 		btnRandom.setActionCommand("random");
 		btnRandom.addActionListener(action);
-		btnRandom.setBounds(94, 270, 101, 23);
+		btnRandom.setBounds(10, 270, 101, 23);
 		settingsPanel.add(btnRandom);
 		
 		energyTextPane = new JTextPane();
@@ -866,6 +905,14 @@ private class ChangeHandler implements ChangeListener {
 		moreSlotsSlider.setBounds(10, 360, 34, 96);
 		settingsPanel.add(moreSlotsSlider);
 		
+		
+		btnGenerateData = new JButton("Generate Data");
+		btnGenerateData.addActionListener(action);
+		btnGenerateData.setActionCommand("GenerateData");
+		btnGenerateData.setBounds(173, 270, 101, 23);
+		btnGenerateData.setMargin(new Insets(0, 0, 0, 0));
+		settingsPanel.add(btnGenerateData);
+		
 
 		
 		
@@ -882,11 +929,6 @@ private class ChangeHandler implements ChangeListener {
 		multiRunsCheckBox.addActionListener(action);
 		multiRunsCheckBox.setActionCommand("multi_checked");
 		controlPanel.add(multiRunsCheckBox);
-		
-		fileCheckBox = new JCheckBox("File");
-		fileCheckBox.setBounds(6, 37, 46, 23);
-		fileCheckBox.setEnabled(false);
-		controlPanel.add(fileCheckBox);
 		
 
 		
@@ -942,6 +984,8 @@ private class ChangeHandler implements ChangeListener {
 		lblRate.setBounds(159, 41, 29, 14);
 		lblRate.setVisible(false);
 		controlPanel.add(lblRate);
+		
+
 		btnCompute.addActionListener(action);
 		
 		statsPanel = new JPanel();
@@ -1083,8 +1127,7 @@ private class ChangeHandler implements ChangeListener {
 		            int row = target.getSelectedRow();
 		            consoleScreen.setText(""+byCarTable.getModel().getValueAt(row, 0));
 		            int position = (int) byCarTable.getModel().getValueAt(row, 0);
-		            consoleScreen.setText("Was available from: " + car_to_slot.get(position - 1).getStartTime() + " to "
-		            		+ car_to_slot.get(position - 1).getEndTime() + " and its needs was: " + car_to_slot.get(position - 1).getNeeds() + " energy units.");
+		            consoleScreen.setText(r.getCarInfo(position - 1));
 		        }
 		    }
 		});
@@ -1119,6 +1162,27 @@ private class ChangeHandler implements ChangeListener {
 		mntmSaveAs.setActionCommand("save_as");
 		mntmSaveAs.setEnabled(false);
 		fileMenu.add(mntmSaveAs);
+		
+		mnAlgorithm = new JMenu("Algorithm");
+		menuBar.add(mnAlgorithm);
+		
+		chckbxmntmCplexOffline = new JCheckBoxMenuItem("Cplex Offline");
+		chckbxmntmCplexOffline.setSelected(true);
+		chckbxmntmCplexOffline.addActionListener(action);
+		chckbxmntmCplexOffline.setActionCommand("CplexOffline");
+		mnAlgorithm.add(chckbxmntmCplexOffline);
+		
+		chckbxmntmCplexOnline = new JCheckBoxMenuItem("Cplex Online");
+		chckbxmntmCplexOnline.setSelected(false);
+		chckbxmntmCplexOnline.addActionListener(action);
+		chckbxmntmCplexOnline.setActionCommand("CplexOnline");
+		mnAlgorithm.add(chckbxmntmCplexOnline);
+		
+		chckbxmntmCustomOnline = new JCheckBoxMenuItem("Custom Online");
+		chckbxmntmCustomOnline.setSelected(false);
+		chckbxmntmCustomOnline.addActionListener(action);
+		chckbxmntmCustomOnline.setActionCommand("CustomOnline");
+		mnAlgorithm.add(chckbxmntmCustomOnline);
 		
 		plotMenu = new JMenu("Plot");
 		menuBar.add(plotMenu);
@@ -1198,7 +1262,13 @@ private class ChangeHandler implements ChangeListener {
 		mntmRenewablesUsed.addActionListener(action);
 
 		
-		model = new Model();
+		//model = new Model();
+		
+		data[0] = 1;
+		data[1] = 2;
+		data[2] = 1;
+		data[3] = 1;
+		
 		
 	}
 	
@@ -1213,38 +1283,41 @@ private class ChangeHandler implements ChangeListener {
 	
 	public void computeResults(int cars_num)
 	{
-		model = new Model();
-		System.out.println("Cars: "+ cars_num);
-		model.createAndRunModel(dt.getCarsByStartTime(cars_num), dt.getTime_slots(),
-				dt.getEnergy(), dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy(), w1, w2, w3, 0, -1);
 		
-//		renProgressBar.setValue((int)Math.round(results.getRenewablesUsedPercentage()));
-//		nonRenProgressBar.setValue((int)Math.round(results.getNonRenewablesUsedPercentage()));
-//		energyProgressBar.setValue((int)Math.round(results.getEnergyUsedPercentage()));
-//		energyAllProgressBar.setValue((int)Math.round(results.getRenewablesPerAllPercentage()));
-//		slotProgressBar.setValue((int)Math.round(results.getSlotsUsedPercentage()));
-//		chargedProgressBar.setValue((int)Math.round(results.getCarChargedPercentage()));
+
 		
-		car_to_slot = model.getCar_to_slot();
+		if(algorithm == 0) // offline
+		{
+			model = new Model(dt, w1, w2, w3);
+			r = model.staticRun(-1);
+		}
+		else if(algorithm == 1)//custom online
+		{
+			Dynamic d = new Dynamic(dt);
+			r = d.run(-1);
+		}
+		else // cplex offline
+		{
+			model = new Model(dt, w1, w2, w3);
+			r = model.realTimeRun(-1);
+		}
+		r.printMap();
+		chargedProgressBar.setValue((int)r.getCarChargedPercentage());
+		energyAllProgressBar.setValue((int) r.getRenewablesPerAllPercentage()); 
+		energyProgressBar.setValue((int) r.getEnergyUsedPercentage());
+		nonRenProgressBar.setValue((int) r.getNonRenewablesUsedPercentage());
+		renProgressBar.setValue((int) r.getRenewablesUsedPercentage());
+		slotProgressBar.setValue((int) r.getSlotsUsedPercentage());
+		
+		
+		
+		car_to_slot = r.getCarToSlot();
 
 		
 		int counter = 1;
-    	for(Car c : car_to_slot)
+    	for(String c : car_to_slot)
     	{
-    		if(!c.getSlots().isEmpty())
-    		{
-	    		StringBuilder strb = new StringBuilder();
-	    		for(Integer t: c.getSlots())
-	    		{
-	    			strb.append(t + ", ");
-	    			
-	    			//System.out.println(t);
-	    		}
-	    		String print = strb.toString();
-	    		print = print.substring(0, print.length()-2);
-	    		table_model_car.addRow(new Object[]{counter, print});
-	    		
-    		}
+	    	table_model_car.addRow(new Object[]{counter, c});	
     		counter++;
     	}
     	

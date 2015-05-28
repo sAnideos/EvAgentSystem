@@ -157,22 +157,94 @@ public class Test {
 		
 	}
 	
-	public void writeToFile()
+	
+	
+	public int getEnergyAverage()
 	{
-		try {
-			PrintWriter writer = new PrintWriter("/exported_data/static.txt", "UTF-8");
-			
-			writer.print("Blah");
-			writer.close();
-			
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		double average = 0;
+		double count = 0;
+		
+		for(Double d: total_energy)
+		{
+			count++;
+			average += d;
 		}
+		
+		return (int)Math.round(average/count);
 	}
+	
+
+	public int getReneablesAverage()
+	{
+		double average = 0;
+		double count = 0;
+		
+		for(Double d: renewables)
+		{
+			count++;
+			average += d;
+		}
+		
+		return (int)Math.round(average/count);
+	}
+	
+	public int getRenewablesPerAllAverage()
+	{
+		double average = 0;
+		double count = 0;
+		
+		for(Double d: renewables_total)
+		{
+			count++;
+			average += d;
+		}
+		
+		return (int)Math.round(average/count);
+	}
+	
+	public int getNonRenewablesAverage()
+	{
+		double average = 0;
+		double count = 0;
+		
+		for(Double d: non_renewables)
+		{
+			count++;
+			average += d;
+		}
+		
+		return (int)Math.round(average/count);
+	}
+	
+	public int getCarsChargedAverage()
+	{
+		double average = 0;
+		double count = 0;
+		
+		for(Double d: cars_charged)
+		{
+			count++;
+			average += d;
+		}
+		
+		return (int)Math.round(average/count);
+	}
+	
+	public int getSlotsUsedAverage()
+	{
+		double average = 0;
+		double count = 0;
+		
+		for(Double d: slots)
+		{
+			count++;
+			average += d;
+		}
+		
+		return (int)Math.round(average/count);
+	}
+	
+
 	
 	
 }

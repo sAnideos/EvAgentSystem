@@ -50,7 +50,12 @@ public class DataGenerator {
 	}
 	
 	
-	
+	public void generateAllData()
+	{
+		this.generateCarData();
+		this.generateEnergyData();
+		this.generateDiverseEnergy();	
+	}
 	
 	public void generateCarData()
 	{
@@ -108,7 +113,7 @@ public class DataGenerator {
 			//random = rand.nextInt(energy_range) + 1;
 			//System.out.println();
 			non_renewable_energy[i] = random - rendom;
-			System.out.println("Ren energy: " + renewable_energy[i] + " + " + non_renewable_energy[i] + " = " + (renewable_energy[i]+non_renewable_energy[i]));
+			//System.out.println("Ren energy: " + renewable_energy[i] + " + " + non_renewable_energy[i] + " = " + (renewable_energy[i]+non_renewable_energy[i]));
 		}
 		
 	}
@@ -354,8 +359,33 @@ public class DataGenerator {
 	}
 
 	
-	
-	
+//	private ArrayList<Car> cars;
+//	private int[] energy;
+//
+//	private int[] renewable_energy;
+//	private int[] non_renewable_energy;
+	public String toString()
+	{
+		StringBuilder str = new StringBuilder();
+		
+		str.append("Renewables: ");
+		for(int i = 0; i < renewable_energy.length; i++)
+		{
+			str.append(renewable_energy[i] + " ");
+		}
+		str.append("\nNon Renewables: ");
+		for(int i = 0; i < renewable_energy.length; i++)
+		{
+			str.append(non_renewable_energy[i] + " ");
+		}
+		str.append("\nCars: ");
+		for(Car ev: cars)
+		{
+			str.append("Available from: " + ev.getStartTime() + " to " + ev.getEndTime() + " with needs: " + ev.getMinNeeds() + " - " + ev.getNeeds() + "\n");
+		}
+		
+		return str.toString();
+	}
 	
 	
 	

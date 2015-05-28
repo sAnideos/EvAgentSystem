@@ -9,30 +9,41 @@ public class MainClass {
 	public static void main(String[] args) {
 		
 		StatsManagement sm = new StatsManagement();
-		String path = "C:/Users/Andreas Sitaras/Desktop/Files/newtest.txt";
-		Model m = new Model();
-		//Results cplexResults = m.realTimeRun(path);
+		String path = "C:/Users/Andreas Sitaras/Desktop/Files/big_test2.txt";
+		//Model m = new Model(path, null);
+//		//Results cplexResults = m.realTimeRun(path);
+//		Results r = m.staticRun(-1);
+//		r.printMap();
+//		System.out.println(r.toString());
+//		Dynamic d = new Dynamic(path, null);
+//		Test t = d.multiRun(2, 2);
+//		t.setTestName("Custom");
+//		sm.addStats(t);
+//		System.out.println(t.toString());
+//		Results r = m.realTimeRun(-1);
+//		System.out.println(r.toString());
+//		r.printMap();
+		//Test t = m.multiRealTimeRun(2, 2);
+		//System.out.println(t.toString());
 		
-		Dynamic d = new Dynamic(path);
-		Test t = d.multiRun(2, 2);
-		t.setTestName("Custom");
-		sm.addStats(t);
-		System.out.println(t.toString());
+////		
+////		d.multiRun();
+//		//Results cDyn = d.run(-1);
 //		
-//		d.multiRun();
-		//Results cDyn = d.run(-1);
-		
-		Test test = m.multiRunsStatic(2, 2, path);
-		test.setTestName("Static");
-		sm.addStats(test);
+//		Test test = m.multiRunsStatic(2, 2, path, null);
+//		test.setTestName("Static");
+//		sm.addStats(test);
 //		
-		sm.showGraph("Energy");
-		sm.showGraph("Renewables");
+//		sm.showGraph("Energy");
+//		sm.showGraph("Renewables");
 //		sm.showGraph("Energy");
 //		sm.showGraph("Non Renewables");
-		sm.showGraph("Renewables/Total");
-		sm.showGraph("Cars Charged");
-		sm.showGraph("Slots Used");
+//		sm.showGraph("Renewables/Total");
+//		sm.showGraph("Cars Charged");
+//		sm.showGraph("Slots Used");
+//		Results r = d.run(-1);
+//		r.printMap();
+//		System.out.println(r.toString());
 		
 		//System.out.println(test.toString());
 		

@@ -21,17 +21,17 @@ public class Model {
 	private int renewable_all_used = 0;
 	private int charged = 0;
 	private int slots_used = 0;
-	private float used_r = 0; //renewable
-	private float used_n = 0; //non renewable
-	private float all_ren = 0;
-	private float all_non = 0;
 	//private HashMap<Integer, Car> car_to_slot = new HashMap<Integer, Car>();
 	private ArrayList<Car> car_to_slot;
 	private HashMap<Integer, ArrayList<Integer>> slot_to_car = new HashMap<Integer, ArrayList<Integer>>();
 	private ArrayList<Integer> who_charge = new ArrayList<Integer>(); // krataei apo to charges poioi tha fortisoun, an enas ksekinise na fortizei tote tha fortisei sigoura
 	private int[][] final_map;
 	private int[] renewables_used;
+	private boolean dynamic = false; // 0 - static, 1 - dynamic
+	private double w1, w2, w3;
 	
+	
+	DataGenerator dt;
 	
 	// to make them accessible from all the methods
 	private IloNumVar[][] var; // decision variables' arrays
@@ -42,8 +42,35 @@ public class Model {
 	
 	
 	
+	public Model(DataGenerator dt, double w1, double w2, double w3)
+	{
+		this.dt = dt;
+		this.w1 = w1;
+		this.w2 = w2;
+		this.w3 = w3;
+	}
 	
-	public void createAndRunModel(ArrayList<Car> evs, int ct, int[] energy, int chargers, int[] renewable_energy, int[] non_renewable_energy, double w1, double w2, double w3, int first_slot, int carsNumber)
+	
+	// le old constructor
+//	public Model(String path, int[] data)
+//	{
+//
+//			if(data == null)
+//			{
+//				dt = new DataGenerator(0, 0, 0, 0);
+//				dt.readFromFile(path);
+//			}
+//			else
+//			{
+//				//0 evs, 1 time_slots, 2 chargers, 3 energy_range
+//				dt = new DataGenerator(data[0], data[1], data[2], data[3]);
+//				dt.generateCarData();
+//				dt.generateEnergyData();
+//				dt.generateDiverseEnergy();	
+//			}
+//	}
+	
+	public void createAndRunModel(ArrayList<Car> evs, int ct, int[] energy, int chargers, int[] renewable_energy, int[] non_renewable_energy, int first_slot, int carsNumber)
 	{
 		
 		System.out.println("The weights: " + w1 + ", " + w2 + ", " + w3);
@@ -190,10 +217,13 @@ public class Model {
 				cp.addLe(en, renewable_energy[t] + non_renewable_energy[t], "available energy"); // energy used in a time slot must not exceed the available energy
 			}
 			
-			// 5)
-			for(Integer ev: who_charge)
+			// 5) MIN KSEXASW NA TO VALW GIA TO DYNAMIKO!!!
+			if(dynamic)
 			{
-				cp.addEq(charges[ev], 1.0);
+				for(Integer ev: who_charge)
+				{
+					cp.addEq(charges[ev], 1.0);
+				}
 			}
 
 
@@ -339,7 +369,7 @@ public class Model {
 
 					for(int ev = 0; ev < evs.size(); ev++)
 					{
-						if(cp.getValue(var[ev][first_slot]) == 1.0)
+						if(cp.getValue(var[ev][first_slot]) > 0.5)
 						{
 							final_map[ev][first_slot] = 1;
 							evs.get(ev).updateNeeds();
@@ -399,7 +429,7 @@ public class Model {
 
 			for(int t = first_slot; t < ct; t++)
 			{
-				if(cp.getValue(var[ev][t]) == 1.0)
+				if(cp.getValue(var[ev][t]) > 0.5)
 				{
 					evs.get(ev).addSlot(t);
 					// add to slot list
@@ -450,16 +480,93 @@ public class Model {
 	}
 	
 	
-	public Results realTimeRun(String path)
+	
+	
+	public Test multiRealTimeRun(int start, int rate)
 	{
-		DataGenerator dt = new DataGenerator(0, 0, 0, 0);
-		dt.readFromFile(path);
+		Test test = new Test();
+		int count = 0;
+		do
+		{
+	    	count++;
+	    	System.out.println("Run: " + count);
+			//compute
+			Results results = this.realTimeRun(start);
+			who_charge = new ArrayList<Integer>();
+			
+			test.addCars((double)start);
+			test.addCars_charged(results.getCarChargedPercentage());
+			test.addTotal_energy(results.getEnergyUsedPercentage());
+			test.addRenewables(results.getRenewablesUsedPercentage());
+			test.addRenewables_total(results.getRenewablesPerAllPercentage());
+			test.addNon_renewables(results.getNonRenewablesUsedPercentage());
+			test.addSlots(results.getSlotsUsedPercentage());
+			
+			System.out.println("\n");
+			//results.printMap();
+			System.out.println(results.toString());
+			results.printMap();
+			if((start + rate) >= number_of_cars)
+			{
+				start = number_of_cars;
+				
+				//compute
+				results = this.realTimeRun(start);
+				who_charge = new ArrayList<Integer>();
+				
+				test.addCars((double)start);
+				test.addCars_charged(results.getCarChargedPercentage());
+				test.addTotal_energy(results.getEnergyUsedPercentage());
+				test.addRenewables(results.getRenewablesUsedPercentage());
+				test.addRenewables_total(results.getRenewablesPerAllPercentage());
+				test.addNon_renewables(results.getNonRenewablesUsedPercentage());
+				test.addSlots(results.getSlotsUsedPercentage());
+				
+				
+				System.out.println("\n");
+				//results.printMap();
+				System.out.println(results.toString());
+				results.printMap();
+				break;
+			}
+			else
+			{
+				start += rate;
+			}
+	
+		} while(start <= number_of_cars);
+		
+		
+		return test;
+	}
+	
+	
+	
+	// to data generator
+	public Results realTimeRun(int cars_num)
+	{
+		System.out.println(cars_num);
+		number_of_cars = dt.getCarsNum();
 		//dt.readFromFile("F:/Eclipse Workshop/EvAgentSystem/temp_test.txt");
-
-		ArrayList<Car> cars = dt.getCarsByStartTime(-1);
+		dynamic = true;
+		ArrayList<Car> cars = new ArrayList<Car>();
 		
 		
-		final_map = new int[dt.getCarsNum()][dt.getTime_slots() + 4];
+		for(Car ev: dt.getCarsByStartTime(cars_num))
+		{
+			Car c = new Car();
+			c.setEndTime(ev.getEndTime());
+			c.setStartTime(ev.getStartTime());
+			c.setMinNeeds(ev.getMinNeeds());
+			c.setNeeds(ev.getNeeds());
+			cars.add(c);
+		}
+		
+		if(cars_num == -1)
+		{
+			cars_num = dt.getCarsNum();
+		}
+		final_map = new int[cars_num][dt.getTime_slots() + 4];
 		
 		for(int ev = 0; ev < cars.size(); ev++)
 		{
@@ -493,36 +600,11 @@ public class Model {
 			}
 			
 			// updating current cars - going to be a function
-			
 
-//			int start = 10;
-//			int rate = 5;
-//			while(start <= dt.getCarsNum())
-//			{
-//		    	  	
-//				System.out.println(dt.getCarsNum() + ", " + dt.getTime_slots()); 
-//				createAndRunModel(dt.getCars(start), dt.getTime_slots(), dt.getEnergy(), 
-//						dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy(), 0.0, 1.0, 0.0, slot, dt.getCarsNum());
-//				
-//				if((start + rate) >= dt.getCarsNum())
-//				{
-//					start = dt.getCarsNum();
-//					
-//					createAndRunModel(dt.getCars(start), dt.getTime_slots(), dt.getEnergy(), 
-//							dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy(), 0.0, 1.0, 0.0, slot, dt.getCarsNum());
-//					
-//					break;
-//				}
-//				else
-//				{
-//					start += rate;
-//				}
-//
-//			}
 			
 			System.out.println(dt.getCarsNum() + ", " + dt.getTime_slots()); 
 			createAndRunModel(currentCars, dt.getTime_slots(), dt.getEnergy(), dt.getChargers(), 
-					dt.getRenewable_energy(), dt.getNon_renewable_energy(), 0.0, 1.0, 0.0, slot, dt.getCarsNum());
+					dt.getRenewable_energy(), dt.getNon_renewable_energy(), slot, dt.getCarsNum());
 			
 			
 			for(Car c: currentCars)
@@ -569,17 +651,17 @@ public class Model {
 	
 	
 	
-	private int number_of_cars;
-	public Test multiRunsStatic(int start, int rate, String path)
+	private int number_of_cars = 0;
+	public Test multiRunsStatic(int start, int rate)
 	{
 		Test test = new Test();
 		int count = 0;
 		do
 		{
-	    	 count++;
-	    	 System.out.println("Run: " + count);
+	    	count++;
+	    	System.out.println("Run: " + count);
 			//compute
-			Results results = this.staticRun(path, start);
+			Results results = this.staticRun(start);
 			
 			test.addCars((double)start);
 			test.addCars_charged(results.getCarChargedPercentage());
@@ -597,7 +679,7 @@ public class Model {
 				start = number_of_cars;
 				
 				//compute
-				results = this.staticRun(path, start);
+				results = this.staticRun(start);
 				
 				test.addCars((double)start);
 				test.addCars_charged(results.getCarChargedPercentage());
@@ -623,14 +705,25 @@ public class Model {
 		return test;
 	}
 	
-	public Results staticRun(String path, int cars_num)
+	public Results staticRun(int cars_num)
 	{
-		DataGenerator dt = new DataGenerator(0, 0, 0, 0);
-		dt.readFromFile(path);
 		number_of_cars = dt.getCarsNum();
+		dynamic = false;
 		
-		createAndRunModel(dt.getCarsByStartTime(cars_num), dt.getTime_slots(), 
-				dt.getEnergy(), dt.getChargers(), dt.getRenewable_energy(), dt.getNon_renewable_energy(), 0.0, 1.0, 0.0, 0, -1);
+		ArrayList<Car> cloned_list = new ArrayList<Car>(); // so that the changes made to the cars won't affect initial data
+		
+		for(Car ev: dt.getCarsByStartTime(cars_num))
+		{
+			Car c = new Car();
+			c.setEndTime(ev.getEndTime());
+			c.setStartTime(ev.getStartTime());
+			c.setMinNeeds(ev.getMinNeeds());
+			c.setNeeds(ev.getNeeds());
+			cloned_list.add(c);
+		}
+		
+		createAndRunModel(cloned_list, dt.getTime_slots(), dt.getEnergy(), dt.getChargers(), dt.getRenewable_energy(), 
+				dt.getNon_renewable_energy(), 0, -1);
 
 		
 		int [][] energy_map = new int[dt.getTime_slots()][3];
@@ -642,7 +735,6 @@ public class Model {
 		}
 		
 		Results results = new Results(final_map, energy_used, dt.getChargers(), energy_map, renewables_used);
-		
 		return results;
 	}
 	
@@ -688,7 +780,10 @@ public class Model {
 		return charged;
 	}
 	
-	
+	public DataGenerator getDataGenerator()
+	{
+		return dt;
+	}
 	
 	
 }

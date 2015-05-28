@@ -91,7 +91,7 @@ public class Slot {
 	public double getScore(double w1, double w2, double w3, int chargers)
 	{
 		double load_score = (double)(chargers - load);
-		double ren_energy_score = (double)(energy[0]);
+		double ren_energy_score = (double)(energy[2]);
 		score = w1 * load_score + w2 * ren_energy_score;
 		return score;
 		//return 1.0;
