@@ -61,6 +61,7 @@ import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JSpinner;
 
 import customDynamic.Dynamic;
+import javax.swing.JRadioButton;
 
 public class Window {
 
@@ -76,6 +77,7 @@ public class Window {
 	private String path;
 	
 	private double w1 = 0.35, w2 = 0.35, w3 = 0.30;
+	private double dw1 = 1.0, dw2 = 0.0, dw3 = 0.0; // weight for the dynamic... 1 - by less load, 2 - by more energy, 3 - consecutive
 	private ArrayList<String> car_to_slot;
 	private HashMap<Integer, ArrayList<Integer>> slot_to_car;
 	private StatsManagement sm = new StatsManagement();
@@ -128,7 +130,7 @@ public class Window {
 			}
 			else if(algorithm == 1)//custom online
 			{
-				Dynamic d = new Dynamic(dt);
+				Dynamic d = new Dynamic(dt, dw1, dw2, dw3);
 				t = d.multiRun(start, rate);
 				chargedProgressBar.setValue(t.getCarsChargedAverage());
 				energyAllProgressBar.setValue(t.getRenewablesPerAllAverage()); 
@@ -363,6 +365,39 @@ public class Window {
 				chckbxmntmCplexOnline.setSelected(false);
 				algorithm = 1;
 			}
+			else if(e.getActionCommand().compareTo("ByLoad") == 0)
+			{
+				if(rdbtnLoad.isSelected())
+				{
+					dw1 = 1.0;
+				}
+				else
+				{
+					dw1 = 0.0;
+				}
+			}
+			else if(e.getActionCommand().compareTo("ByEnergy") == 0)
+			{
+				if(rdbtnEnergy.isSelected())
+				{
+					dw2 = 1.0;
+				}
+				else
+				{
+					dw2 = 0.0;
+				}
+			}
+			else if(e.getActionCommand().compareTo("Consecutive") == 0)
+			{
+				if(rdbtnConsecutive.isSelected())
+				{
+					dw3 = 1.0;
+				}
+				else
+				{
+					dw3 = 0.0;
+				}
+			}
 			else if(e.getActionCommand().compareTo("plot_ren") == 0)
 			{
 				sm.showGraph("Renewables");
@@ -586,6 +621,9 @@ private class ChangeHandler implements ChangeListener {
 	private JCheckBoxMenuItem chckbxmntmCplexOnline;
 	private JCheckBoxMenuItem chckbxmntmCustomOnline;
 	private JButton btnGenerateData;
+	private JRadioButton rdbtnLoad;
+	private JRadioButton rdbtnEnergy;
+	private JRadioButton rdbtnConsecutive;
 	
 	
 	
@@ -643,7 +681,7 @@ private class ChangeHandler implements ChangeListener {
 		frmElectricVehicleAgent = new JFrame();
 		frmElectricVehicleAgent.setResizable(false);
 		frmElectricVehicleAgent.setTitle("Electric Vehicle Agent System");
-		frmElectricVehicleAgent.setBounds(100, 100, 756, 617);
+		frmElectricVehicleAgent.setBounds(100, 100, 756, 616);
 		frmElectricVehicleAgent.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmElectricVehicleAgent.getContentPane().setLayout(null);
 		
@@ -839,7 +877,7 @@ private class ChangeHandler implements ChangeListener {
 		settingsPanel.add(lblMoreSlots);
 		
 		JLabel lblMoreCharged = new JLabel("More Renewables");
-		lblMoreCharged.setBounds(206, 498, 84, 14);
+		lblMoreCharged.setBounds(193, 498, 89, 14);
 		settingsPanel.add(lblMoreCharged);
 		
 		JLabel lblMoreRenewables = new JLabel("More Charged");
@@ -865,7 +903,7 @@ private class ChangeHandler implements ChangeListener {
 		chargedWeightPane.setText("0.30");
 		chargedWeightPane.setEditable(false);
 		chargedWeightPane.setBorder(blackline);
-		chargedWeightPane.setBounds(240, 467, 34, 20);
+		chargedWeightPane.setBounds(206, 467, 34, 20);
 		settingsPanel.add(chargedWeightPane);
 		
 		moreChargeSlider = new JSlider();
@@ -877,7 +915,7 @@ private class ChangeHandler implements ChangeListener {
 		moreChargeSlider.setPaintTicks(true);
 		moreChargeSlider.setOrientation(SwingConstants.VERTICAL);
 		moreChargeSlider.setMajorTickSpacing(5);
-		moreChargeSlider.setBounds(240, 360, 34, 96);
+		moreChargeSlider.setBounds(206, 360, 34, 96);
 		settingsPanel.add(moreChargeSlider);
 		
 		moreRenSlider = new JSlider();
@@ -912,6 +950,25 @@ private class ChangeHandler implements ChangeListener {
 		btnGenerateData.setBounds(173, 270, 101, 23);
 		btnGenerateData.setMargin(new Insets(0, 0, 0, 0));
 		settingsPanel.add(btnGenerateData);
+		
+		rdbtnLoad = new JRadioButton("Load");
+		rdbtnLoad.setSelected(true);
+		rdbtnLoad.addActionListener(action);
+		rdbtnLoad.setActionCommand("ByLoad");
+		rdbtnLoad.setBounds(10, 515, 61, 23);
+		settingsPanel.add(rdbtnLoad);
+		
+		rdbtnEnergy = new JRadioButton("Energy");
+		rdbtnEnergy.setBounds(98, 515, 84, 23);
+		rdbtnEnergy.addActionListener(action);
+		rdbtnEnergy.setActionCommand("ByEnergy");
+		settingsPanel.add(rdbtnEnergy);
+		
+		rdbtnConsecutive = new JRadioButton("Consecutive");
+		rdbtnConsecutive.setBounds(183, 515, 91, 23);
+		rdbtnConsecutive.addActionListener(action);
+		rdbtnConsecutive.setActionCommand("Consecutive");
+		settingsPanel.add(rdbtnConsecutive);
 		
 
 		
@@ -1293,7 +1350,7 @@ private class ChangeHandler implements ChangeListener {
 		}
 		else if(algorithm == 1)//custom online
 		{
-			Dynamic d = new Dynamic(dt);
+			Dynamic d = new Dynamic(dt, dw1, dw2, dw3);
 			r = d.run(-1);
 		}
 		else // cplex offline
@@ -1337,25 +1394,7 @@ private class ChangeHandler implements ChangeListener {
 
 		byCarTable.getColumnModel().getColumn(1).setMaxWidth(max + 25);
 		byCarTable.getColumnModel().getColumn(1).setMinWidth(max + 25);
-		
-		
-		// print slot to car
-		slot_to_car = model.getSlot_to_car();
-		
-		Set<Integer> keyset = slot_to_car.keySet();
-		
-		for(Integer key : keyset)
-		{
-			StringBuilder strb = new StringBuilder();
-			for(Integer t : slot_to_car.get(key))
-			{
-				strb.append((t + 1) + ", ");
-			}
-			String print = strb.toString();
-			print = print.substring(0, print.length()-2);
-			table_model_slot.addRow(new Object[]{key, print});
-		}
-		
+
     	rows = table_model_slot.getRowCount();
     	max = -1;
     	for(int i = 0; i < rows; i++)

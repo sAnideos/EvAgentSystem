@@ -88,11 +88,12 @@ public class Slot {
 		energy[i]++;
 	}
 	
-	public double getScore(double w1, double w2, double w3, int chargers)
+	public double getScore(double w1, double w2, double w3, int chargers, int min)
 	{
 		double load_score = (double)(chargers - load);
-		double ren_energy_score = (double)(energy[2]);
-		score = w1 * load_score + w2 * ren_energy_score;
+		double ren_energy_score = (double)(energy[0]);
+		double distance = slot - min + 1;
+		score = w1 * load_score + w2 * ren_energy_score - w3 * distance;
 		return score;
 		//return 1.0;
 	}

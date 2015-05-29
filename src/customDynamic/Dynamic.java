@@ -23,15 +23,20 @@ public class Dynamic {
 	private int[] renewables_used; // renewables used in every slot, to use it in the results
 	private int[][] final_map;
 	private DataGenerator dt;
+	private double w1, w2, w3;
 	
 	public DataGenerator getDataGenerator() {
 		return dt;
 	}
 
 	
-	public Dynamic(DataGenerator dt)
+	public Dynamic(DataGenerator dt, double w1, double w2, double w3)
 	{
+		this.w1 = w1;
+		this.w2 = w2;
+		this.w3 = w3;
 		this.dt = dt;
+		System.out.println("Weights: " + w1 + ", " + w2 + ", " + w3);
 		this.resetData();
 	}
 	
@@ -134,7 +139,7 @@ public class Dynamic {
 		return test;
 	}
 	
-	
+	private int ev_counter = 0; // says which car is calculating slots for the score, to take the min and maximum slot
 	public Results run(int cars_num)
 	{
 		
@@ -149,6 +154,22 @@ public class Dynamic {
 			c.setMinNeeds(ev.getMinNeeds());
 			c.setNeeds(ev.getNeeds());
 			evs.add(c);
+		}
+		
+		
+		final_map = new int[evs.size()][ct + 4];
+		
+		for(int ev = 0; ev < evs.size(); ev++)
+		{
+			int temp = ct;
+			Car temp_car = evs.get(ev);
+			final_map[ev][temp] = temp_car.getInitial_start_time();
+			temp++;
+			final_map[ev][temp] = temp_car.getEndTime();
+			temp++;
+			final_map[ev][temp] = temp_car.getInitialMinNeeds();
+			temp++;
+			final_map[ev][temp] = temp_car.getInitial_needs();
 		}
 
 		System.out.println(dt.toString());
@@ -172,7 +193,7 @@ public class Dynamic {
 		}
 			evs = new ArrayList<Car>();
 			// for every car now in the station find some slots for it to charge
-			int counter = 0;
+			ev_counter = 0;
 			for(Car ev: currentCars)
 			{
 				int start_time = ev.getStartTime();
@@ -187,14 +208,17 @@ public class Dynamic {
 //				}
 				
 				ArrayList<Slot> available_slots = new ArrayList<Slot>(); // contains the slots that the car is available to charge, it is going to be sorted
-																		// to find the slots with the less load
+				System.out.println("Ev -> " + ev_counter);												// to find the slots with the less load
 				
 				for(int i = start_time; i < end_time; i++)
 				{
 					available_slots.add(slots[i]);
 				}
 				// sort by energy
-				//Collections.sort(available_slots, new LoadComparator());
+				if((w3 != 1.0) || (w2 != 0.0) || (w1 != 0.0))
+				{
+					Collections.sort(available_slots, new LoadComparator());
+				}
 				int ren_used = 0; // it is used to reset the slots back to normal
 				for(int i = 0; i < available_slots.size(); i++)
 				{
@@ -236,26 +260,13 @@ public class Dynamic {
 					ev.resetSlots();
 				}
 				evs.add(ev);
-				
+				ev_counter ++;
 			}
 			
 			
 			
 			
-		final_map = new int[evs.size()][ct + 4];
-		
-		for(int ev = 0; ev < evs.size(); ev++)
-		{
-			int temp = ct;
-			Car temp_car = evs.get(ev);
-			final_map[ev][temp] = temp_car.getInitial_start_time();
-			temp++;
-			final_map[ev][temp] = temp_car.getEndTime();
-			temp++;
-			final_map[ev][temp] = temp_car.getInitialMinNeeds();
-			temp++;
-			final_map[ev][temp] = temp_car.getInitial_needs();
-		}
+
 		for(int i = 0; i < evs.size(); i++)
 		{
 			Car ev = evs.get(i);
@@ -320,10 +331,11 @@ public class Dynamic {
 		@Override
 		public int compare(Slot d0, Slot d1) {
 			
-			double w1 = 0.0, w2 = 1.0 - w1;
-			if (d0.getScore(w1, w2, 0.0, chargers) > d1.getScore(w1, w2, 0.0, chargers)) {
+			int min = final_map[ev_counter][ct];
+			
+			if (d0.getScore(w1, w2, 0.0, chargers, min) > d1.getScore(w1, w2, 0.0, chargers, min)) {
 				return -1;
-			} else if (d0.getScore(w1, w2, 0.0, chargers) < d1.getScore(w1, w2, 0.0, chargers)) {
+			} else if (d0.getScore(w1, w2, 0.0, chargers, min) < d1.getScore(w1, w2, 0.0, chargers, min)) {
 				return 1;
 			} else {
 				return 0;
