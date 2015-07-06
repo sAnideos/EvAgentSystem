@@ -1,9 +1,6 @@
 package source;
 
-import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 
 import ilog.concert.IloException;
@@ -22,8 +19,8 @@ public class Model {
 	private int charged = 0;
 	private int slots_used = 0;
 	//private HashMap<Integer, Car> car_to_slot = new HashMap<Integer, Car>();
-	private ArrayList<Car> car_to_slot;
-	private HashMap<Integer, ArrayList<Integer>> slot_to_car = new HashMap<Integer, ArrayList<Integer>>();
+	//private ArrayList<Car> car_to_slot;
+	//private HashMap<Integer, ArrayList<Integer>> slot_to_car = new HashMap<Integer, ArrayList<Integer>>();
 	private ArrayList<Integer> who_charge = new ArrayList<Integer>(); // krataei apo to charges poioi tha fortisoun, an enas ksekinise na fortizei tote tha fortisei sigoura
 	private int[][] final_map;
 	private int[] renewables_used;
@@ -38,7 +35,7 @@ public class Model {
 	private IloNumVar[] charges;
 	private IloNumVar[][] ren_energy;
 	private IloNumVar[][] non_ren_energy;
-	private IloCplex cp;
+	private IloCplex cp; // create the model;
 	
 	
 	
@@ -47,7 +44,13 @@ public class Model {
 		this.dt = dt;
 		this.w1 = w1;
 		this.w2 = w2;
-		this.w3 = w3;
+		this.w3 = 0.0;
+		try {
+			cp = new IloCplex();
+		} catch (IloException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	
@@ -77,7 +80,7 @@ public class Model {
 		try {
 
 
-			cp = new IloCplex(); // create the model
+			
 			
 			if(first_slot == 0)
 			{
@@ -177,6 +180,8 @@ public class Model {
 				{
 					energy_.addTerm(1, non_ren_energy[t][en]);
 				}
+
+
 				
 				cp.addEq(energy_, cars, "energy = cars");
 			}
@@ -216,8 +221,7 @@ public class Model {
 
 				cp.addLe(en, renewable_energy[t] + non_renewable_energy[t], "available energy"); // energy used in a time slot must not exceed the available energy
 			}
-			
-			// 5) MIN KSEXASW NA TO VALW GIA TO DYNAMIKO!!!
+
 			if(dynamic)
 			{
 				for(Integer ev: who_charge)
@@ -239,7 +243,21 @@ public class Model {
 				all_energy += renewable_energy[i];
 				all_energy += non_renewable_energy[i];
 			}
-			double normalized_w = 100.0 / ((evs.size() * ct) + all_energy + evs.size());
+			double factor_1 = 0, factor_2 = 0, factor_3 = 0;
+			if(w1 != 0)
+			{
+				factor_1 = (evs.size() * ct);
+			}
+			if(w2 != 0)
+			{
+				factor_2 = all_energy;
+			}
+			
+			if(w3 != 0)
+			{
+				factor_3 = evs.size();
+			}
+			double normalized_w = 100.0 / (factor_1 + factor_2 + factor_3);
 			
 			IloLinearNumExpr p_charges = cp.linearNumExpr();
 			for(int ev = 0; ev < evs.size(); ev ++)
@@ -257,101 +275,8 @@ public class Model {
 				p_charges.addTerm(normalized_w * w2, charges[ev]);
 			}
 			
-			
 
-			
-			
-			
-			boolean stupid = false; // true gia to statiko
-
-			//normalized_w = 1.0 / all_energy;
-			IloLinearNumExpr p_energy = cp.linearNumExpr();
-			if(stupid) // me to kolpo pou meiwnei tin aksia twn ananewsimwn
-			{
-			
-				// na xrisimopoiei perissotero ananewsimes
-
-				// gia to statiko
-				for(int t = first_slot; t < ct; t++)
-				{
-					for(int en = 0; en < renewable_energy[t]; en++)
-					{
-						p_energy.addTerm(normalized_w * w3, ren_energy[t][en]);
-					}
-					for(int en = 0; en < non_renewable_energy[t]; en++)
-					{
-						p_energy.addTerm(normalized_w * w3, non_ren_energy[t][en]);
-					}
-					
-				}
-			}
-			else // to kanoniko xwris to kolpo
-			{
-				
-				
-				
-				class CarComp implements Comparator<Car>{
-					 
-				    @Override
-				    public int compare(Car e1, Car e2) {
-				        return e1.getEndTime() - (e2.getEndTime());
-				    }
-				}
-				int last_car;
-				if(evs.size() > 1)
-				{
-			        Car last = Collections.max(evs, new CarComp());
-			        System.out.println("Employee with max salary: "+ last.getEndTime());
-			        last_car = last.getEndTime();
-				}
-				else if(evs.size() >= 1)
-				{
-					last_car = evs.get(0).getEndTime();
-				}
-				else
-				{
-					last_car = 1;
-				}
-				
-				double factor = 0.9;
-				
-				double r = ((first_slot + ct) * 0.5) - first_slot;
-				double rate = 0.6 / ct;
-				for(int t = first_slot; t < ct; t++)
-				{
-//					if(renewable_energy[t] < 0.3 * non_renewable_energy[t])
-//					{
-//						factor = 0.5;
-//					}
-					
-
-					for(int en = 0; en < renewable_energy[t]; en++)
-					{
-						p_energy.addTerm((  normalized_w) * (w3 * factor), ren_energy[t][en]);
-					}
-					for(int en = 0; en < non_renewable_energy[t]; en++)
-					{
-						p_energy.addTerm((  normalized_w) * (w3 *  (1.0 - factor)), non_ren_energy[t][en]);
-					}
-//					if(t >= (first_slot + last_car) * 0.5)
-//					{
-//						System.out.println("This is the t: " + t + " and the ct: " + last_car);
-//						factor = 0.5;
-//					}
-//					else
-//					{
-//						factor -= rate;
-//					}
-//					if(factor - rate > 0)
-//						factor -= rate;
-				}
-			}
-			// megistopoiisi oximnatwn pou fortizoun
-			/*
-			IloLinearNumExpr p_charges = cp.linearNumExpr();
-
-			*/
-			cp.addMaximize(cp.sum(p_charges, p_energy));
+			cp.addMaximize(p_charges);
 			
 
 			
@@ -360,9 +285,6 @@ public class Model {
 				if(carsNumber == -1)
 				{
 					computeResults(cp, evs, ct, energy, chargers, renewable_energy, non_renewable_energy, first_slot);
-				
-				
-
 				}
 				else
 				{
@@ -390,7 +312,7 @@ public class Model {
 				}
 			}
 
-			
+			cp.clearModel();
 
 			} catch (IloException e) {
 			System.err.println("Concert exception caught: " + e);
@@ -433,16 +355,16 @@ public class Model {
 				{
 					evs.get(ev).addSlot(t);
 					// add to slot list
-					if(slot_to_car.get(t) == null)
-					{
-						ArrayList<Integer> temp = new ArrayList<Integer>();
-						temp.add(ev);
-						slot_to_car.put(t, temp);
-					}
-					else
-					{
-						slot_to_car.get(t).add(ev);
-					}
+//					if(slot_to_car.get(t) == null)
+//					{
+//						ArrayList<Integer> temp = new ArrayList<Integer>();
+//						temp.add(ev);
+//						slot_to_car.put(t, temp);
+//					}
+//					else
+//					{
+//						slot_to_car.get(t).add(ev);
+//					}
 					
 					final_map[ev][t] = 1;
 				}
@@ -475,7 +397,7 @@ public class Model {
 				}
 			}
 		}
-    	car_to_slot = evs;
+    	//car_to_slot = evs;
     	
 	}
 	
@@ -760,13 +682,13 @@ public class Model {
 	}
 
 
-	public ArrayList<Car> getCar_to_slot() {
-		return car_to_slot;
-	}
-
-	public HashMap<Integer, ArrayList<Integer>> getSlot_to_car() {
-		return slot_to_car;
-	}
+//	public ArrayList<Car> getCar_to_slot() {
+//		return car_to_slot;
+//	}
+//
+//	public HashMap<Integer, ArrayList<Integer>> getSlot_to_car() {
+//		return slot_to_car;
+//	}
 
 	public int getRenewable_all_used() {
 		return renewable_all_used;

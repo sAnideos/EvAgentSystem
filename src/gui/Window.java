@@ -13,8 +13,6 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
-import java.util.Set;
-
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JComponent;
@@ -28,7 +26,6 @@ import javax.swing.JButton;
 import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JProgressBar;
-import javax.swing.ListModel;
 import javax.swing.MenuSelectionManager;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -40,7 +37,6 @@ import javax.swing.plaf.basic.BasicCheckBoxMenuItemUI;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 
-import source.Car;
 import source.DataGenerator;
 import source.Model;
 import source.Results;
@@ -61,6 +57,7 @@ import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JSpinner;
 
 import customDynamic.Dynamic;
+
 import javax.swing.JRadioButton;
 
 public class Window {
@@ -111,7 +108,7 @@ public class Window {
 	    	btnRandom.setEnabled(false);
 	    	mntmOpen.setEnabled(false);
 	    	moreSlotsSlider.setEnabled(false);
-	    	moreRenSlider.setEnabled(false);
+	    	moreChargedSlider.setEnabled(false);
 	    	btnAddTest.setEnabled(false);
 	    	
 	    	
@@ -154,7 +151,7 @@ public class Window {
 	    	btnRandom.setEnabled(true);
 	    	mntmOpen.setEnabled(true);
 	    	moreSlotsSlider.setEnabled(true);
-	    	moreRenSlider.setEnabled(true);
+	    	moreChargedSlider.setEnabled(true);
 	    	btnAddTest.setEnabled(true);
 	    	
 	    
@@ -212,7 +209,6 @@ public class Window {
 					//System.out.println(dt.getCars());
 					computeResults(-1);
 				}
-				
 				
 			}
 			else if(e.getActionCommand().compareTo("save_as") == 0)
@@ -471,38 +467,12 @@ private class ChangeHandler implements ChangeListener {
         	   chargerTextPane.setText("" + chargers);
         	   System.out.println("chargers: " + chargers);
            }
-           else if(source.getName().equals("ren_w"))
+           else if(source.getName().equals("ren_w")) // more charged
            {
 				w2 = (source.getValue() / 100.0);
-				DecimalFormat df = new DecimalFormat("0.00"); 
-				String temp = df.format(w2).replace(",", ".");
-				renWeightPane.setText(temp);
-				w2 = Double.parseDouble(temp);
-				double why = (Math.round((1.0 - w2 - w1) * 100.0)) / 100.0;
-				w3 = why;
-				temp = df.format(w3).replace(",", ".").replace("-", "");
-				
-				chargedWeightPane.setText(temp);
-				moreChargeSlider.setValue((int)(w3 * 100));
-				System.out.println("w1: " + w1 + " w2: " + w2 + " w3: " + w3);
-           }
-           else if(source.getName().equals("slots_w")) // edw to varos tha kataligei panta se 0 h' 5, den kserw an einai kako, emena kalo mou fainetai... dld de tha ginei pote 0.71 px
-           {
-				w1 = (source.getValue() / 100.0);
-				
-				if(source.getValue() % 10 == 5)
-				{
-					int temp;
-					temp = source.getValue() - 5;
-					
-					w2 = ((100 - temp) / 2) / 100.0;
-					w3 = w2 + 0.05;
-				}
-				else
-				{
-					w2 = ((100.0 - source.getValue()) / 2) / 100.0;
-					w3 = w2;
-				}
+
+				w1 = ((100.0 - source.getValue())) / 100.0;
+
 				
 				//System.out.println("W2: " + w2 + " W3: " + w3);
 				//w2 = (1.0 - w1) / 2;
@@ -515,15 +485,31 @@ private class ChangeHandler implements ChangeListener {
 				temp = df.format(w2).replace(",", ".");
 				renWeightPane.setText(temp + "");
 				
-				chargedWeightPane.setText(w3  + "");
-				moreChargeSlider.setValue((int)(w3) * 100);
+				moreSlotsSlider.setValue((int)(w1*100));
 				
-				
-				double why = (Math.round((1.00 - w1) * 100.0)) / 100.0;
-				moreRenSlider.setMaximum((int)(why * 100.0));
-				moreRenSlider.setValue((int)(w2 * 100.0));
-				moreRenSlider.setMajorTickSpacing(5);
 
+				System.out.println("w1: " + w1 + " w2: " + w2 + " w3: " + w3);
+           }
+           else if(source.getName().equals("slots_w")) // edw to varos tha kataligei panta se 0 h' 5, den kserw an einai kako, emena kalo mou fainetai... dld de tha ginei pote 0.71 px
+           {
+        	   
+				w1 = (source.getValue() / 100.0);
+
+				w2 = ((100.0 - source.getValue())) / 100.0;
+
+				
+				//System.out.println("W2: " + w2 + " W3: " + w3);
+				//w2 = (1.0 - w1) / 2;
+				//System.out.println(w2);
+				DecimalFormat df = new DecimalFormat("0.00"); 
+				String temp = df.format(w1).replace(",", ".");
+				slotsWeightPane.setText(temp);
+				
+				
+				temp = df.format(w2).replace(",", ".");
+				renWeightPane.setText(temp + "");
+				
+				moreChargedSlider.setValue((int)(w2*100));
 				
 				//System.out.println("The maximum: " + (int)(Double.parseDouble(temp) * 100));
 				
@@ -580,11 +566,9 @@ private class ChangeHandler implements ChangeListener {
 	private JButton minusBtnSlots;
 	private JButton minusBtnChargers;
 	private JSlider moreSlotsSlider;	
-	private JSlider moreChargeSlider;	
-	private JSlider moreRenSlider;
+	private JSlider moreChargedSlider;
 	private JTextPane slotsWeightPane;
 	private JTextPane renWeightPane;
-	private JTextPane chargedWeightPane;
 	private JCheckBox multiRunsCheckBox;
 	private JMenuBar menuBar;	
 	private JMenu fileMenu;	
@@ -624,8 +608,15 @@ private class ChangeHandler implements ChangeListener {
 	private JRadioButton rdbtnLoad;
 	private JRadioButton rdbtnEnergy;
 	private JRadioButton rdbtnConsecutive;
-	
-	
+	private JLabel energyLabel;	
+	private JLabel renLabel;
+	private JLabel nonRenLabel;
+	private JLabel renAllLabel;
+	private JLabel chargedLabel;
+	private JLabel slotsLabel;
+	private JPanel customPanel;
+	private JLabel lblCustomDynamic;
+	private JPanel cplexPanel;
 	
 	
 // ---------------------- MAIN ---------------------------
@@ -783,12 +774,6 @@ private class ChangeHandler implements ChangeListener {
 		chargerTextPane.setEditable(false);
 		settingsPanel.add(chargerTextPane);
 		
-		
-		JLabel lblObjectiveFunctionWeight = new JLabel("Objective Function Weight");
-		lblObjectiveFunctionWeight.setHorizontalAlignment(SwingConstants.CENTER);
-		lblObjectiveFunctionWeight.setBounds(46, 335, 184, 14);
-		settingsPanel.add(lblObjectiveFunctionWeight);
-		
 		JButton plusBtnCars = new JButton("+");
 		plusBtnCars.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
@@ -870,79 +855,6 @@ private class ChangeHandler implements ChangeListener {
 		minusBtnChargers.setBounds(183, 213, 24, 23);
 		settingsPanel.add(minusBtnChargers);
 		
-
-		
-		JLabel lblMoreSlots = new JLabel("More Slots");
-		lblMoreSlots.setBounds(10, 498, 61, 14);
-		settingsPanel.add(lblMoreSlots);
-		
-		JLabel lblMoreCharged = new JLabel("More Renewables");
-		lblMoreCharged.setBounds(193, 498, 89, 14);
-		settingsPanel.add(lblMoreCharged);
-		
-		JLabel lblMoreRenewables = new JLabel("More Charged");
-		lblMoreRenewables.setBounds(94, 498, 89, 14);
-		settingsPanel.add(lblMoreRenewables);
-		
-		
-		slotsWeightPane = new JTextPane();
-		slotsWeightPane.setText("0.35");
-		slotsWeightPane.setEditable(false);
-		slotsWeightPane.setBorder(blackline);
-		slotsWeightPane.setBounds(10, 467, 34, 20);
-		settingsPanel.add(slotsWeightPane);
-		
-		renWeightPane = new JTextPane();
-		renWeightPane.setText("0.35");
-		renWeightPane.setEditable(false);
-		renWeightPane.setBorder(blackline);
-		renWeightPane.setBounds(125, 467, 34, 20);
-		settingsPanel.add(renWeightPane);
-		
-		chargedWeightPane = new JTextPane();
-		chargedWeightPane.setText("0.30");
-		chargedWeightPane.setEditable(false);
-		chargedWeightPane.setBorder(blackline);
-		chargedWeightPane.setBounds(206, 467, 34, 20);
-		settingsPanel.add(chargedWeightPane);
-		
-		moreChargeSlider = new JSlider();
-		moreChargeSlider.setEnabled(false);
-		moreChargeSlider.setValue(30);
-		moreChargeSlider.addChangeListener(change);
-		moreChargeSlider.setName("charged_w");
-		moreChargeSlider.setSnapToTicks(true);
-		moreChargeSlider.setPaintTicks(true);
-		moreChargeSlider.setOrientation(SwingConstants.VERTICAL);
-		moreChargeSlider.setMajorTickSpacing(5);
-		moreChargeSlider.setBounds(206, 360, 34, 96);
-		settingsPanel.add(moreChargeSlider);
-		
-		moreRenSlider = new JSlider();
-		moreRenSlider.setMaximum(35);
-		moreRenSlider.setValue(35);
-		moreRenSlider.setName("ren_w");
-		moreRenSlider.addChangeListener(change);
-		moreRenSlider.setSnapToTicks(true);
-		moreRenSlider.setPaintTicks(true);
-		moreRenSlider.setOrientation(SwingConstants.VERTICAL);
-		moreRenSlider.setMajorTickSpacing(2);
-		moreRenSlider.setBounds(125, 360, 34, 96);
-		settingsPanel.add(moreRenSlider);
-		
-		
-		
-		moreSlotsSlider = new JSlider();
-		moreSlotsSlider.setValue(35);
-		moreSlotsSlider.setName("slots_w");
-		moreSlotsSlider.addChangeListener(change);
-		moreSlotsSlider.setMajorTickSpacing(5);
-		moreSlotsSlider.setSnapToTicks(true);
-		moreSlotsSlider.setPaintTicks(true);
-		moreSlotsSlider.setOrientation(SwingConstants.VERTICAL);
-		moreSlotsSlider.setBounds(10, 360, 34, 96);
-		settingsPanel.add(moreSlotsSlider);
-		
 		
 		btnGenerateData = new JButton("Generate Data");
 		btnGenerateData.addActionListener(action);
@@ -951,26 +863,106 @@ private class ChangeHandler implements ChangeListener {
 		btnGenerateData.setMargin(new Insets(0, 0, 0, 0));
 		settingsPanel.add(btnGenerateData);
 		
+		customPanel = new JPanel();
+		customPanel.setBounds(164, 335, 118, 199);
+		settingsPanel.add(customPanel);
+		customPanel.setLayout(null);
+		customPanel.setBorder(blackline);
+		
 		rdbtnLoad = new JRadioButton("Load");
+		rdbtnLoad.setHorizontalAlignment(SwingConstants.LEFT);
+		rdbtnLoad.setBounds(20, 48, 62, 23);
+		customPanel.add(rdbtnLoad);
 		rdbtnLoad.setSelected(true);
 		rdbtnLoad.addActionListener(action);
 		rdbtnLoad.setActionCommand("ByLoad");
-		rdbtnLoad.setBounds(10, 515, 61, 23);
-		settingsPanel.add(rdbtnLoad);
+
+		
+		lblCustomDynamic = new JLabel("Custom Dynamic");
+		lblCustomDynamic.setHorizontalAlignment(SwingConstants.CENTER);
+		Border redBorder = BorderFactory.createMatteBorder(1, 1, 1, 1, Color.BLUE);
+		lblCustomDynamic.setBorder(redBorder);
+		lblCustomDynamic.setBounds(10, 11, 98, 14);
+		customPanel.add(lblCustomDynamic);
 		
 		rdbtnEnergy = new JRadioButton("Energy");
-		rdbtnEnergy.setBounds(98, 515, 84, 23);
+		rdbtnEnergy.setHorizontalAlignment(SwingConstants.LEFT);
+		rdbtnEnergy.setBounds(20, 97, 62, 23);
+		customPanel.add(rdbtnEnergy);
 		rdbtnEnergy.addActionListener(action);
 		rdbtnEnergy.setActionCommand("ByEnergy");
-		settingsPanel.add(rdbtnEnergy);
 		
 		rdbtnConsecutive = new JRadioButton("Consecutive");
-		rdbtnConsecutive.setBounds(183, 515, 91, 23);
+		rdbtnConsecutive.setBounds(20, 149, 85, 23);
+		customPanel.add(rdbtnConsecutive);
 		rdbtnConsecutive.addActionListener(action);
 		rdbtnConsecutive.setActionCommand("Consecutive");
-		settingsPanel.add(rdbtnConsecutive);
+		
+		cplexPanel = new JPanel();
+		cplexPanel.setBounds(10, 335, 152, 199);
+		settingsPanel.add(cplexPanel);
+		redBorder = BorderFactory.createMatteBorder(1, 1, 1, 0, Color.BLACK);
+		cplexPanel.setBorder(redBorder);
+		cplexPanel.setLayout(null);
+		
+		
+		JLabel lblObjectiveFunctionWeight = new JLabel("Objective Function Weight");
+		lblObjectiveFunctionWeight.setBounds(9, 11, 136, 14);
+		cplexPanel.add(lblObjectiveFunctionWeight);
+		redBorder = BorderFactory.createMatteBorder(1, 1, 1, 1, Color.BLUE);
+		lblObjectiveFunctionWeight.setBorder(redBorder);
+		lblObjectiveFunctionWeight.setHorizontalAlignment(SwingConstants.CENTER);
+		
+		
+		
+		moreSlotsSlider = new JSlider();
+		moreSlotsSlider.setBounds(19, 36, 34, 96);
+		cplexPanel.add(moreSlotsSlider);
+		moreSlotsSlider.setOrientation(SwingConstants.VERTICAL);
+		moreSlotsSlider.setName("slots_w");
+		moreSlotsSlider.addChangeListener(change);
+		moreSlotsSlider.setMajorTickSpacing(5);
+		moreSlotsSlider.setSnapToTicks(true);
+		moreSlotsSlider.setPaintTicks(true);
+		
+		
+		
+		moreChargedSlider = new JSlider();
+		moreChargedSlider.setBounds(93, 36, 34, 96);
+		cplexPanel.add(moreChargedSlider);
+		moreChargedSlider.setName("ren_w");
+		moreChargedSlider.addChangeListener(change);
+		moreChargedSlider.setSnapToTicks(true);
+		moreChargedSlider.setPaintTicks(true);
+		moreChargedSlider.setOrientation(SwingConstants.VERTICAL);
+		moreChargedSlider.setMajorTickSpacing(5);
+		
+		
+		slotsWeightPane = new JTextPane();
+		slotsWeightPane.setBounds(19, 137, 34, 20);
+		cplexPanel.add(slotsWeightPane);
+		slotsWeightPane.setText("0.50");
+		slotsWeightPane.setEditable(false);
+		slotsWeightPane.setBorder(blackline);
+		
+		renWeightPane = new JTextPane();
+		renWeightPane.setBounds(93, 137, 34, 20);
+		cplexPanel.add(renWeightPane);
+		renWeightPane.setText("0.50");
+		renWeightPane.setEditable(false);
+		renWeightPane.setBorder(blackline);
 		
 
+		
+		JLabel lblMoreSlots = new JLabel("More Slots");
+		lblMoreSlots.setBounds(10, 165, 61, 14);
+		cplexPanel.add(lblMoreSlots);
+		
+		
+		JLabel lblMoreRenewables = new JLabel("More Charged");
+		lblMoreRenewables.setHorizontalAlignment(SwingConstants.CENTER);
+		lblMoreRenewables.setBounds(73, 165, 79, 14);
+		cplexPanel.add(lblMoreRenewables);
 		
 		
 		
@@ -1121,6 +1113,36 @@ private class ChangeHandler implements ChangeListener {
 		
 		consoleScreen = new JTextPane();
 		scrollPane.setViewportView(consoleScreen);
+		
+		energyLabel = new JLabel("");
+		energyLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+		energyLabel.setBounds(141, 11, 104, 14);
+		statsPanel.add(energyLabel);
+		
+		renLabel = new JLabel("");
+		renLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+		renLabel.setBounds(136, 36, 109, 14);
+		statsPanel.add(renLabel);
+		
+		nonRenLabel = new JLabel("");
+		nonRenLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+		nonRenLabel.setBounds(141, 61, 104, 14);
+		statsPanel.add(nonRenLabel);
+		
+	    renAllLabel = new JLabel("");
+	    renAllLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+		renAllLabel.setBounds(165, 84, 80, 14);
+		statsPanel.add(renAllLabel);
+		
+		chargedLabel = new JLabel("");
+		chargedLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+		chargedLabel.setBounds(136, 111, 109, 14);
+		statsPanel.add(chargedLabel);
+		
+		slotsLabel = new JLabel("");
+		slotsLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+		slotsLabel.setBounds(141, 136, 104, 14);
+		statsPanel.add(slotsLabel);
 		
 		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 		tabbedPane.setBounds(312, 31, 411, 215);
@@ -1366,7 +1388,12 @@ private class ChangeHandler implements ChangeListener {
 		renProgressBar.setValue((int) r.getRenewablesUsedPercentage());
 		slotProgressBar.setValue((int) r.getSlotsUsedPercentage());
 		
-		
+		energyLabel.setText(r.energyUsedString());
+		renLabel.setText(r.renEnergyUsedString());
+		chargedLabel.setText(r.carsChargedString());
+		nonRenLabel.setText(r.nonRenEnergyUsedString());
+		renAllLabel.setText(r.renPerAllEnergyString());
+		slotsLabel.setText(r.slotsUsedString());
 		
 		car_to_slot = r.getCarToSlot();
 

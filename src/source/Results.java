@@ -83,7 +83,7 @@ public class Results {
 		}
 		System.out.println("Non Renewables");
 		
-		for(int t = 0; t < ct; t++)
+		for(int t = 275; t < ct; t++)
 		{
 			System.out.print(load[t] + " ");
 		}
@@ -98,6 +98,137 @@ public class Results {
 		
 	}
 
+	
+	
+	private int energy_units;
+	private int all_energy_units;
+	private int ren_units;
+	private int all_ren_units;
+	private int non_ren_units;
+	private int all_non_ren_units;
+	private int ren_all_units;
+	private int all_ren_all_units;
+	private int cars_charged;	
+	private int all_cars;
+	private int slots_used;
+	private int all_slots;
+	
+	
+	public String slotsUsedString()
+	{
+		String str = "(" + slots_used + "/" + all_slots + ")";
+		return str;
+	}
+	
+	
+	public String carsChargedString()
+	{
+		String str = "(" + cars_charged + "/" + all_cars + ")";
+		return str;
+	}
+	
+	
+	public String renPerAllEnergyString()
+	{
+		String str = "(" + ren_all_units + "/" + all_ren_all_units + ")";
+		return str;
+	}
+	
+	public String nonRenEnergyUsedString()
+	{
+		String str = "(" + non_ren_units + "/" + all_non_ren_units + ")";
+		return str;
+	}
+	
+	public String renEnergyUsedString()
+	{
+		String str = "(" + ren_units + "/" + all_ren_units + ")";
+		return str;
+	}
+	
+	public String energyUsedString()
+	{
+		String str = "(" + energy_units + "/" + all_energy_units + ")";
+		return str;
+	}
+	
+	
+	
+	public int[][] getInitial_energy() {
+		return initial_energy;
+	}
+
+
+	public int[] getRenewables_used() {
+		return renewables_used;
+	}
+
+
+	public int getCt() {
+		return ct;
+	}
+
+
+	public int getEnergy_units() {
+		return energy_units;
+	}
+
+
+	public int getAll_energy_units() {
+		return all_energy_units;
+	}
+
+
+	public int getRen_units() {
+		return ren_units;
+	}
+
+
+	public int getAll_ren_units() {
+		return all_ren_units;
+	}
+
+
+	public int getNon_ren_units() {
+		return non_ren_units;
+	}
+
+
+	public int getAll_non_ren_units() {
+		return all_non_ren_units;
+	}
+
+
+	public int getRen_all_units() {
+		return ren_all_units;
+	}
+
+
+	public int getAll_ren_all_units() {
+		return all_ren_all_units;
+	}
+
+
+	public int getCars_charged() {
+		return cars_charged;
+	}
+
+
+	public int getAll_cars() {
+		return all_cars;
+	}
+
+
+	public int getSlots_used() {
+		return slots_used;
+	}
+
+
+	public int getAll_slots() {
+		return all_slots;
+	}
+
+
 	public void computeEnergyUsed()
 	{
 		double used = 0;
@@ -110,6 +241,7 @@ public class Results {
 		
 		energy_used = (int)Math.round(((used / all)*100)) ;
 	}
+
 	
 	public double getRenewablesUsedPercentage()
 	{
@@ -122,6 +254,9 @@ public class Results {
 			all += initial_energy[t][0];
 		}
 		percentage = ((r_usage / all)*100);
+		
+		ren_units = (int)r_usage;
+		all_ren_units = (int)all;
 		
 		return round(percentage, 2);
 	}
@@ -138,6 +273,8 @@ public class Results {
 		}
 		percentage = ((usage / all)*100);
 		
+		energy_units = (int)usage;
+		all_energy_units = (int)all;
 		
 		return round(percentage, 2);
 	}
@@ -153,6 +290,10 @@ public class Results {
 			r_usage += (load[t] - renewables_used[t]);
 			all += (initial_energy[t][2] - initial_energy[t][0]);
 		}
+		
+		non_ren_units = (int)r_usage;
+		all_non_ren_units = (int)all;
+		
 		
 		if((r_usage == 0.0) && (all == 0.0))
 		{
@@ -177,11 +318,18 @@ public class Results {
 			r_usage += renewables_used[t];
 			all += (load[t]);
 		}
+		
+		ren_all_units = (int)r_usage;
+		all_ren_all_units = (int)all;
+		
+		
 		if((r_usage == 0.0) && (all == 0.0))
 		{
 			return 0.0;
 		}
 		percentage = ((r_usage / all)*100);
+		
+		
 		
 		
 		return round(percentage, 2);
@@ -191,7 +339,7 @@ public class Results {
 	public double getCarChargedPercentage()
 	{
 		double percentage;
-		double all_cars = final_map.length;
+		double all = final_map.length;
 		double charged = 0.0;
 		for(int ev = 0; ev < final_map.length; ev++)
 		{
@@ -204,7 +352,10 @@ public class Results {
 				}
 			}
 		}
-		percentage = ((charged / all_cars)*100);
+		percentage = ((charged / all)*100);
+		
+		cars_charged = (int)charged;
+		all_cars = (int)all;
 		
 		return round(percentage, 2);
 	}
@@ -227,6 +378,11 @@ public class Results {
 		}
 		
 		double k = ((final_map[0].length - 4)*chargers);
+		
+		
+		slots_used = (int)charged;
+		all_slots = (int)k;
+		
 		
 		if((charged == 0.0) && (k == 0.0))
 		{

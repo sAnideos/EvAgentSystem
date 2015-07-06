@@ -72,7 +72,11 @@ public class DataGenerator {
 			n = rand.nextInt(time_slots - 1);
 			car.setStartTime(n);
 			
-			n = rand.nextInt(time_slots - car.getStartTime()) + car.getStartTime();
+			n = 1500;
+			while((n -  car.getStartTime()) > 70)
+			{
+				n = rand.nextInt(time_slots - car.getStartTime()) + car.getStartTime();
+			}
 			
 			car.setEndTime(n);
 			
@@ -176,32 +180,62 @@ public class DataGenerator {
 	}
 	
 	
+	public void shuffleCars()
+	{
+		Collections.shuffle(cars);
+	}
+	
 	public ArrayList<Car> getCarsByStartTime(int count)
 	{
-		List<Car> sorted_cars = cars;
+		ArrayList<Car> sorted_cars = new ArrayList<Car>();
+		
+		
+		if(count == -1)
+		{
+			count = cars.size();
+		}
+		
+		for(int i = 0; i < count; i++)
+		{
+			Car car = new Car();
+			Car c = cars.get(i);
+			car.setStartTime(c.getStartTime());
+			car.setEndTime(c.getEndTime());
+			car.setInitial_needs(c.getInitial_needs());
+			car.setInitial_start_time(c.getInitial_start_time());
+			car.setMinNeeds(c.getMinNeeds());
+			car.setNeeds(c.getNeeds());
+			sorted_cars.add(car);
+		}
 		
 
 		Collections.sort(sorted_cars, new Comparator<Car>() {
 
 	        public int compare(Car c1, Car c2) {
+	        	if(c1.getStartTime() == c2.getStartTime())
+	        	{
+	        		return c1.getNeeds() - c2.getNeeds();
+	        	}
 	            return c1.getStartTime() - c2.getStartTime();
 	        }
 	    });
 		
-		if(count == cars.size() || (count == -1))
-		{
-			return cars;
-		}
-		else
-		{
-			ArrayList<Car> temp = new ArrayList<Car>();
-			
-			for(int i = 0; i < count; i++)
-			{
-				temp.add(cars.get(i));
-			}
-			return temp;
-		}
+		return sorted_cars;
+		
+//		if(count == cars.size() || (count == -1))
+//		{
+//			return sorted_cars;
+//		}
+//		else
+//		{
+//			ArrayList<Car> temp = new ArrayList<Car>();
+//			
+//			for(int i = 0; i < count; i++)
+//			{
+//				temp.add(sorted_cars.get(i));
+//			}
+//			return temp;
+//		}
 
 	}
 	

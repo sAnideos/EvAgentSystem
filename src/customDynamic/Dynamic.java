@@ -303,7 +303,7 @@ public class Dynamic {
 //			System.out.println("\n");
 //		}
 		
-		
+		results.printMap();
 		MatlabCode mtlb = new MatlabCode();
 		mtlb.produceCode(final_map);
 		
